@@ -8,77 +8,95 @@ class CryptoPriceCache {
     private var isFetching = false
     private var refreshTimer: Timer?
     
+    // Top 50 mainstream crypto tokens by market cap
     private let cryptoIds: [String: String] = [
+        // Top 10
         "btc": "bitcoin",
-        "eth": "ethereum", 
-        "sol": "solana",
-        "doge": "dogecoin",
-        "xrp": "ripple",
-        "ada": "cardano",
-        "dot": "polkadot",
-        "matic": "matic-network",
-        "link": "chainlink",
-        "uni": "uniswap",
-        "avax": "avalanche-2",
-        "atom": "cosmos",
-        "ltc": "litecoin",
-        "etc": "ethereum-classic",
-        "xlm": "stellar",
-        "algo": "algorand",
-        "near": "near",
-        "ftm": "fantom",
-        "bnb": "binancecoin",
+        "eth": "ethereum",
         "usdt": "tether",
-        "usdc": "usd-coin"
+        "bnb": "binancecoin",
+        "xrp": "ripple",
+        "usdc": "usd-coin",
+        "sol": "solana",
+        "trx": "tron",
+        "doge": "dogecoin",
+        "ada": "cardano",
+        // 11-20
+        "bch": "bitcoin-cash",
+        "xmr": "monero",
+        "leo": "leo-token",
+        "link": "chainlink",
+        "xlm": "stellar",
+        "ltc": "litecoin",
+        "dai": "dai",
+        "avax": "avalanche-2",
+        "sui": "sui",
+        "shib": "shiba-inu",
+        // 21-30
+        "hbar": "hedera-hashgraph",
+        "ton": "the-open-network",
+        "cro": "crypto-com-chain",
+        "dot": "polkadot",
+        "uni": "uniswap",
+        "mnt": "mantle",
+        "bgb": "bitget-token",
+        "aave": "aave",
+        "okb": "okb",
+        "tao": "bittensor",
+        // 31-40
+        "pepe": "pepe",
+        "near": "near",
+        "atom": "cosmos",
+        "etc": "ethereum-classic",
+        "matic": "matic-network",
+        "apt": "aptos",
+        "op": "optimism",
+        "arb": "arbitrum",
+        "vet": "vechain",
+        "fil": "filecoin",
+        // 41-50
+        "algo": "algorand",
+        "ftm": "fantom",
+        "inj": "injective-protocol",
+        "sei": "sei-network",
+        "imx": "immutable-x",
+        "grt": "the-graph",
+        "sand": "the-sandbox",
+        "mana": "decentraland",
+        "axs": "axie-infinity",
+        "ape": "apecoin"
     ]
     
     private let symbols: [String: String] = [
-        "btc": "₿",
-        "eth": "Ξ",
-        "sol": "SOL",
-        "doge": "DOGE",
-        "xrp": "XRP",
-        "ada": "ADA",
-        "dot": "DOT",
-        "matic": "MATIC",
-        "link": "LINK",
-        "uni": "UNI",
-        "avax": "AVAX",
-        "atom": "ATOM",
-        "ltc": "LTC",
-        "etc": "ETC",
-        "xlm": "XLM",
-        "algo": "ALGO",
-        "near": "NEAR",
-        "ftm": "FTM",
-        "bnb": "BNB",
-        "usdt": "USDT",
-        "usdc": "USDC"
+        "btc": "₿", "eth": "Ξ", "usdt": "₮", "bnb": "BNB", "xrp": "XRP",
+        "usdc": "USDC", "sol": "◎", "trx": "TRX", "doge": "Ð", "ada": "₳",
+        "bch": "BCH", "xmr": "ɱ", "leo": "LEO", "link": "LINK", "xlm": "XLM",
+        "ltc": "Ł", "dai": "DAI", "avax": "AVAX", "sui": "SUI", "shib": "SHIB",
+        "hbar": "ℏ", "ton": "TON", "cro": "CRO", "dot": "DOT", "uni": "UNI",
+        "mnt": "MNT", "bgb": "BGB", "aave": "AAVE", "okb": "OKB", "tao": "TAO",
+        "pepe": "PEPE", "near": "NEAR", "atom": "ATOM", "etc": "ETC", "matic": "MATIC",
+        "apt": "APT", "op": "OP", "arb": "ARB", "vet": "VET", "fil": "FIL",
+        "algo": "ALGO", "ftm": "FTM", "inj": "INJ", "sei": "SEI", "imx": "IMX",
+        "grt": "GRT", "sand": "SAND", "mana": "MANA", "axs": "AXS", "ape": "APE"
     ]
     
-    // Fallback prices (approximate) when API is unavailable
+    // Fallback prices (approximate USD) when API is unavailable
     private let fallbackPrices: [String: Double] = [
-        "btc": 97000,
-        "eth": 3300,
-        "sol": 200,
-        "doge": 0.35,
-        "xrp": 2.5,
-        "ada": 1.0,
-        "dot": 7.0,
-        "matic": 0.5,
-        "link": 23,
-        "uni": 14,
-        "avax": 35,
-        "atom": 7,
-        "ltc": 120,
-        "etc": 28,
-        "xlm": 0.4,
-        "algo": 0.4,
-        "near": 5,
-        "ftm": 0.7,
-        "bnb": 680,
-        "usdt": 1.0,
-        "usdc": 1.0
+        // Top 10
+        "btc": 77000, "eth": 2300, "usdt": 1.0, "bnb": 750, "xrp": 1.6,
+        "usdc": 1.0, "sol": 100, "trx": 0.28, "doge": 0.10, "ada": 0.29,
+        // 11-20
+        "bch": 520, "xmr": 420, "leo": 8.3, "link": 9.5, "xlm": 0.17,
+        "ltc": 58, "dai": 1.0, "avax": 10, "sui": 1.1, "shib": 0.000007,
+        // 21-30
+        "hbar": 0.09, "ton": 1.3, "cro": 0.08, "dot": 1.5, "uni": 3.8,
+        "mnt": 0.68, "bgb": 3.0, "aave": 123, "okb": 86, "tao": 190,
+        // 31-40
+        "pepe": 0.000004, "near": 1.2, "atom": 2.0, "etc": 9.5, "matic": 0.15,
+        "apt": 4.0, "op": 0.7, "arb": 0.25, "vet": 0.02, "fil": 2.3,
+        // 41-50
+        "algo": 0.10, "ftm": 0.05, "inj": 8.0, "sei": 0.12, "imx": 0.4,
+        "grt": 0.07, "sand": 0.22, "mana": 0.22, "axs": 2.8, "ape": 0.4
     ]
     
     private var usingFallback = false
@@ -88,13 +106,12 @@ class CryptoPriceCache {
         prices = fallbackPrices
         // Then try to load real prices async
         refreshPricesAsync()
-        // Refresh every 60 seconds
+        // Refresh every 5 minutes to stay under rate limit (~30/min)
         startRefreshTimer()
     }
     
     private func startRefreshTimer() {
         DispatchQueue.main.async { [weak self] in
-            // Refresh every 5 minutes to stay well under rate limit (~30/min)
             self?.refreshTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
                 self?.refreshPricesAsync()
             }

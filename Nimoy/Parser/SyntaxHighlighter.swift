@@ -11,9 +11,16 @@ class SyntaxHighlighter {
                             "l", "ml", "liter", "liters", "litre", "litres", "gal", "gallon", "gallons", "cup", "cups", "pt", "pint", "pints",
                             "usd", "eur", "gbp", "jpy", "chf", "thb", "cny", "krw", "inr", "euro", "euros", "dollar", "dollars", "yen", "baht", "franc", "francs",
                             "celsius", "fahrenheit", "kelvin",
-                            // Crypto
-                            "btc", "eth", "sol", "doge", "xrp", "ada", "dot", "matic", "link", "uni", "avax", "atom", "ltc", "etc", "xlm", "algo", "near", "ftm", "bnb", "usdt", "usdc",
-                            "bitcoin", "ethereum", "solana", "dogecoin", "ripple", "cardano", "polkadot", "chainlink", "uniswap", "avalanche", "cosmos", "litecoin", "stellar", "algorand", "fantom"])
+                            // Crypto - Top 50 by market cap
+                            "btc", "eth", "usdt", "bnb", "xrp", "usdc", "sol", "trx", "doge", "ada",
+                            "bch", "xmr", "leo", "link", "xlm", "ltc", "dai", "avax", "sui", "shib",
+                            "hbar", "ton", "cro", "dot", "uni", "mnt", "bgb", "aave", "okb", "tao",
+                            "pepe", "near", "atom", "etc", "matic", "apt", "op", "arb", "vet", "fil",
+                            "algo", "ftm", "inj", "sei", "imx", "grt", "sand", "mana", "axs", "ape",
+                            // Full names
+                            "bitcoin", "ethereum", "tether", "solana", "dogecoin", "ripple", "cardano",
+                            "polkadot", "chainlink", "uniswap", "avalanche", "cosmos", "litecoin", "stellar",
+                            "algorand", "fantom", "monero", "tron", "filecoin", "aptos", "arbitrum", "optimism"])
     
     static func highlight(_ text: String, font: NSFont, lineHeight: CGFloat, theme: Theme) -> NSAttributedString {
         let attributed = NSMutableAttributedString(string: text)
