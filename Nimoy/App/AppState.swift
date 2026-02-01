@@ -4,7 +4,9 @@ import Combine
 @MainActor
 class AppState: ObservableObject {
     @Published var pages: [Page] = []
-    @Published var currentPageIndex: Int = 0
+    @Published var currentPageIndex: Int = 0 {
+        didSet { saveLastPage() }
+    }
     @Published var showSearch: Bool = false { didSet { if showSearch { searchId = UUID() } } }
     @Published var showActions: Bool = false { didSet { if showActions { actionsId = UUID() } } }
     @Published var showGenerate: Bool = false { didSet { if showGenerate { generateId = UUID() } } }
@@ -13,6 +15,8 @@ class AppState: ObservableObject {
     @Published var generateId = UUID()
     
     private let storageURL: URL
+    
+    private let lastPageKey = "lastOpenedPageId"
     
     init() {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -24,6 +28,13 @@ class AppState: ObservableObject {
         
         if pages.isEmpty {
             createNewPage()
+        }
+        
+        // Restore last opened page
+        if let lastPageId = UserDefaults.standard.string(forKey: lastPageKey),
+           let uuid = UUID(uuidString: lastPageId),
+           let index = pages.firstIndex(where: { $0.id == uuid }) {
+            currentPageIndex = index
         }
     }
     
@@ -66,6 +77,13 @@ class AppState: ObservableObject {
     func navigateToPage(at index: Int) {
         guard index >= 0 && index < pages.count else { return }
         currentPageIndex = index
+        saveLastPage()
+    }
+    
+    private func saveLastPage() {
+        if let page = currentPage {
+            UserDefaults.standard.set(page.id.uuidString, forKey: lastPageKey)
+        }
     }
     
     func nextPage() {

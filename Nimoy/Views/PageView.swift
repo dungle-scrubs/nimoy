@@ -601,16 +601,22 @@ class ResultsNSView: NSView {
         startLoadingAnimation()
         needsDisplay = true
         
-        // Build context from surrounding lines
+        // Build context from ALL lines (so LLM sees variable names)
         var context = ""
         for lineResult in results {
-            guard let evalResult = lineResult.result else { continue }
-            switch evalResult {
-            case .number(let numValue, let unit, _, _):
-                let formatted: String = unit?.format(numValue) ?? String(numValue)
-                context += "\(lineResult.input) = \(formatted)\n"
-            default:
-                break
+            let line = lineResult.input.trimmingCharacters(in: .whitespaces)
+            guard !line.isEmpty else { continue }
+            
+            if let evalResult = lineResult.result {
+                switch evalResult {
+                case .number(let numValue, let unit, _, _):
+                    let formatted: String = unit?.format(numValue) ?? String(numValue)
+                    context += "\(lineResult.input) → \(formatted)\n"
+                default:
+                    context += "\(lineResult.input)\n"
+                }
+            } else {
+                context += "\(lineResult.input)\n"
             }
         }
         
@@ -626,32 +632,48 @@ class ResultsNSView: NSView {
     
     private func getAISuggestion(lineText: String, context: String) async -> String? {
         let prompt = """
-        You are helping complete a calculator/spreadsheet entry.
+        You are helping fix a calculator/spreadsheet entry.
         
-        Context (other lines with values):
+        Existing variables and values:
         \(context)
         
-        This line needs a numeric value: "\(lineText)"
+        This line has a problem: "\(lineText)"
         
-        Respond with ONLY the complete line including a number value. Examples:
-        - "rent" → "rent 1500"
-        - "coffee budget" → "coffee budget 200"
-        - "tax rate" → "tax rate 15%"
+        Rules:
+        1. If it looks like a typo of an existing variable name, just fix the spelling (e.g., "sticker" → "stickers" if "stickers" exists)
+        2. If it's a new item without a value, add a reasonable value
+        3. Fix any typos or complete partial words
         
-        Complete this line:
+        Examples:
+        - "sticker" when "stickers = 15000" exists → "stickers" (reference existing var)
+        - "insuranc" when "insurance = 1000" exists → "insurance" (fix typo to match existing)
+        - "rent" with no existing rent variable → "rent 1500" (new item needs value)
+        
+        Respond with ONLY the corrected line. Nothing else.
         """
         
         do {
+            print("🔍 AI Suggestion Request:")
+            print("  Line: \(lineText)")
+            print("  Context:\n\(context)")
+            
             let response = try await LLMManager.shared.generate(
                 prompt: prompt,
-                systemPrompt: "You complete calculator entries. Respond with only the completed line, nothing else.",
+                systemPrompt: "Fix the line to match existing variables or add values. Output only the corrected line, no quotes or explanation.",
                 maxTokens: 50,
-                temperature: 0.3
+                temperature: 0.2
             )
+            
+            print("  Response: \(response)")
+            
             let cleaned = response.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
                 .replacingOccurrences(of: "\"", with: "")
+                .components(separatedBy: "\n").first ?? ""  // Take only first line
+            
+            print("  Cleaned: \(cleaned)")
             return cleaned.isEmpty ? nil : cleaned
         } catch {
+            print("  Error: \(error)")
             return nil
         }
     }
