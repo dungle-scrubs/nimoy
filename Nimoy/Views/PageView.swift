@@ -500,6 +500,37 @@ class ResultsNSView: NSView {
     var results: [LineResult] = []
     weak var textView: GhostTextView?
     
+    // Loading dots animation
+    private var loadingFrame = 0
+    private let loadingFrames = [".  ", ".. ", "..."]
+    private var loadingTimer: Timer?
+    
+    private var hasLoadingResults: Bool {
+        results.contains { result in
+            if case .text(let str) = result.result, str == "Loading..." {
+                return true
+            }
+            return false
+        }
+    }
+    
+    func startLoadingAnimation() {
+        guard loadingTimer == nil else { return }
+        loadingTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: true) { [weak self] _ in
+            guard let self = self, self.hasLoadingResults else {
+                self?.stopLoadingAnimation()
+                return
+            }
+            self.loadingFrame = (self.loadingFrame + 1) % self.loadingFrames.count
+            self.needsDisplay = true
+        }
+    }
+    
+    func stopLoadingAnimation() {
+        loadingTimer?.invalidate()
+        loadingTimer = nil
+    }
+    
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
         
@@ -515,13 +546,57 @@ class ResultsNSView: NSView {
         var charIndex = 0
         
         for (index, line) in lines.enumerated() {
-            guard index < results.count,
-                  let result = results[index].result else {
+            let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+            let hasResult = index < results.count && results[index].result != nil
+            let result = hasResult ? results[index].result : nil
+            
+            // Check if line should have a value but doesn't
+            let shouldHaveValue = !trimmedLine.isEmpty 
+                && !trimmedLine.hasPrefix("//") 
+                && !trimmedLine.hasPrefix("#")
+                && !trimmedLine.hasPrefix("/*")
+                && !trimmedLine.hasPrefix("*/")
+                && trimmedLine.contains(where: { $0.isLetter })
+            
+            let needsWarning = shouldHaveValue && result == nil
+            
+            // Draw warning icon for lines without values
+            if needsWarning {
+                let safeCharIndex = min(charIndex, max(0, text.count - 1))
+                if safeCharIndex >= 0 && !text.isEmpty {
+                    let glyphIndex = layoutManager.glyphIndexForCharacter(at: safeCharIndex)
+                    let lineRect = layoutManager.lineFragmentRect(forGlyphAt: glyphIndex, effectiveRange: nil)
+                    let yPos = lineRect.origin.y + textView.textContainerInset.height + 3
+                    
+                    // Draw subtle warning icon (⚠) at the right
+                    let warningAttrs: [NSAttributedString.Key: Any] = [
+                        .font: NSFont.systemFont(ofSize: 12),
+                        .foregroundColor: theme.secondaryTextColor.withAlphaComponent(0.4)
+                    ]
+                    let warningRect = NSRect(x: bounds.width - editorInset - 20, y: yPos + 2, width: 20, height: lineRect.height)
+                    ("⚠" as NSString).draw(in: warningRect, withAttributes: warningAttrs)
+                }
                 charIndex += line.count + 1
                 continue
             }
             
-            let displayString = result.displayString
+            guard let result = result else {
+                charIndex += line.count + 1
+                continue
+            }
+            
+            var displayString = result.displayString
+            
+            // Animate loading dots
+            if case .text(let str) = result, str == "Loading..." {
+                displayString = loadingFrames[loadingFrame]
+                if loadingTimer == nil {
+                    DispatchQueue.main.async { [weak self] in
+                        self?.startLoadingAnimation()
+                    }
+                }
+            }
+            
             guard !displayString.isEmpty else {
                 charIndex += line.count + 1
                 continue
