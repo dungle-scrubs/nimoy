@@ -28,11 +28,13 @@
 		A10000000000000000000023 /* NimoyTemplates.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000023 /* NimoyTemplates.swift */; };
 		A10000000000000000000024 /* GenerateOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000024 /* GenerateOverlay.swift */; };
 		A10000000000000000000025 /* LLMProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000025 /* LLMProvider.swift */; };
+		A10000000000000000000026 /* MLXProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000026 /* MLXProvider.swift */; };
 		A10000000000000000000018 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000018 /* Theme.swift */; };
 		A10000000000000000000019 /* BuiltInThemes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* BuiltInThemes.swift */; };
 		A10000000000000000000021 /* ThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000021 /* ThemeManager.swift */; };
 		T10000000000000000000001 /* EvaluatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000001 /* EvaluatorTests.swift */; };
 		T10000000000000000000002 /* DebugTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000002 /* DebugTest.swift */; };
+		T10000000000000000000003 /* MLXProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000003 /* MLXProviderTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -67,12 +69,14 @@
 		A20000000000000000000023 /* NimoyTemplates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NimoyTemplates.swift; sourceTree = "<group>"; };
 		A20000000000000000000024 /* GenerateOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateOverlay.swift; sourceTree = "<group>"; };
 		A20000000000000000000025 /* LLMProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMProvider.swift; sourceTree = "<group>"; };
+		A20000000000000000000026 /* MLXProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLXProvider.swift; sourceTree = "<group>"; };
 		A20000000000000000000018 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		A20000000000000000000019 /* BuiltInThemes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInThemes.swift; sourceTree = "<group>"; };
 		A20000000000000000000021 /* ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeManager.swift; sourceTree = "<group>"; };
 		A30000000000000000000001 /* Nimoy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Nimoy.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		T20000000000000000000001 /* EvaluatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvaluatorTests.swift; sourceTree = "<group>"; };
 		T20000000000000000000002 /* DebugTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugTest.swift; sourceTree = "<group>"; };
+		T20000000000000000000003 /* MLXProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLXProviderTests.swift; sourceTree = "<group>"; };
 		T30000000000000000000002 /* NimoyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NimoyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -178,6 +182,7 @@
 				A20000000000000000000022 /* GroqService.swift */,
 				A20000000000000000000023 /* NimoyTemplates.swift */,
 				A20000000000000000000025 /* LLMProvider.swift */,
+				A20000000000000000000026 /* MLXProvider.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -196,6 +201,7 @@
 			children = (
 				T20000000000000000000001 /* EvaluatorTests.swift */,
 				T20000000000000000000002 /* DebugTest.swift */,
+				T20000000000000000000003 /* MLXProviderTests.swift */,
 			);
 			path = NimoyTests;
 			sourceTree = "<group>";
@@ -319,6 +325,7 @@
 				A10000000000000000000023 /* NimoyTemplates.swift in Sources */,
 				A10000000000000000000024 /* GenerateOverlay.swift in Sources */,
 				A10000000000000000000025 /* LLMProvider.swift in Sources */,
+				A10000000000000000000026 /* MLXProvider.swift in Sources */,
 				A10000000000000000000018 /* Theme.swift in Sources */,
 				A10000000000000000000019 /* BuiltInThemes.swift in Sources */,
 				A10000000000000000000021 /* ThemeManager.swift in Sources */,
@@ -331,6 +338,7 @@
 			files = (
 				T10000000000000000000001 /* EvaluatorTests.swift in Sources */,
 				T10000000000000000000002 /* DebugTest.swift in Sources */,
+				T10000000000000000000003 /* MLXProviderTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
