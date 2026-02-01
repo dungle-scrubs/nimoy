@@ -356,6 +356,26 @@ struct SyncedEditorView: NSViewRepresentable {
         context.coordinator.scrollView = scrollView
         resultsView.textView = textView  // Connect for line position lookup
         
+        // Wire up suggestion callback to apply text changes
+        resultsView.onApplySuggestion = { [weak textView] lineIndex, newText in
+            guard let textView = textView else { return }
+            let lines = textView.string.components(separatedBy: "\n")
+            guard lineIndex < lines.count else { return }
+            
+            // Calculate range of the line to replace
+            var charIndex = 0
+            for i in 0..<lineIndex {
+                charIndex += lines[i].count + 1
+            }
+            let lineRange = NSRange(location: charIndex, length: lines[lineIndex].count)
+            
+            // Replace the line with the suggestion
+            if textView.shouldChangeText(in: lineRange, replacementString: newText) {
+                textView.replaceCharacters(in: lineRange, with: newText)
+                textView.didChangeText()
+            }
+        }
+        
         scrollView.documentView = containerView
         
         context.coordinator.applyHighlighting(to: textView)
@@ -499,11 +519,19 @@ class ResultsNSView: NSView {
     var theme: Theme = BuiltInThemes.dark
     var results: [LineResult] = []
     weak var textView: GhostTextView?
+    var onApplySuggestion: ((Int, String) -> Void)?  // (lineIndex, newText)
     
     // Loading dots animation
     private var loadingFrame = 0
     private let loadingFrames = [".  ", ".. ", "..."]
     private var loadingTimer: Timer?
+    
+    // Warning icon click handling
+    private var warningIconRects: [Int: NSRect] = [:]  // lineIndex -> rect
+    private var pendingSuggestions: [Int: String] = [:]  // lineIndex -> suggested text
+    private var loadingSuggestions: Set<Int> = []  // lines currently fetching suggestions
+    private var confirmButtonRects: [Int: NSRect] = [:]
+    private var cancelButtonRects: [Int: NSRect] = [:]
     
     private var hasLoadingResults: Bool {
         results.contains { result in
@@ -517,7 +545,7 @@ class ResultsNSView: NSView {
     func startLoadingAnimation() {
         guard loadingTimer == nil else { return }
         loadingTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: true) { [weak self] _ in
-            guard let self = self, self.hasLoadingResults else {
+            guard let self = self, self.hasLoadingResults || !self.loadingSuggestions.isEmpty else {
                 self?.stopLoadingAnimation()
                 return
             }
@@ -531,8 +559,110 @@ class ResultsNSView: NSView {
         loadingTimer = nil
     }
     
+    override func mouseDown(with event: NSEvent) {
+        let location = convert(event.locationInWindow, from: nil)
+        
+        // Check confirm buttons
+        for (lineIndex, rect) in confirmButtonRects {
+            if rect.contains(location), let suggestion = pendingSuggestions[lineIndex] {
+                onApplySuggestion?(lineIndex, suggestion)
+                pendingSuggestions.removeValue(forKey: lineIndex)
+                needsDisplay = true
+                return
+            }
+        }
+        
+        // Check cancel buttons
+        for (lineIndex, rect) in cancelButtonRects {
+            if rect.contains(location) {
+                pendingSuggestions.removeValue(forKey: lineIndex)
+                needsDisplay = true
+                return
+            }
+        }
+        
+        // Check warning icons
+        for (lineIndex, rect) in warningIconRects {
+            if rect.contains(location) {
+                requestAISuggestion(for: lineIndex)
+                return
+            }
+        }
+        
+        super.mouseDown(with: event)
+    }
+    
+    private func requestAISuggestion(for lineIndex: Int) {
+        guard !loadingSuggestions.contains(lineIndex) else { return }
+        guard lineIndex < results.count else { return }
+        
+        let lineText = results[lineIndex].input
+        loadingSuggestions.insert(lineIndex)
+        startLoadingAnimation()
+        needsDisplay = true
+        
+        // Build context from surrounding lines
+        var context = ""
+        for lineResult in results {
+            guard let evalResult = lineResult.result else { continue }
+            switch evalResult {
+            case .number(let numValue, let unit, _, _):
+                let formatted: String = unit?.format(numValue) ?? String(numValue)
+                context += "\(lineResult.input) = \(formatted)\n"
+            default:
+                break
+            }
+        }
+        
+        Task { @MainActor in
+            let suggestion = await self.getAISuggestion(lineText: lineText, context: context)
+            self.loadingSuggestions.remove(lineIndex)
+            if let suggestion = suggestion {
+                self.pendingSuggestions[lineIndex] = suggestion
+            }
+            self.needsDisplay = true
+        }
+    }
+    
+    private func getAISuggestion(lineText: String, context: String) async -> String? {
+        let prompt = """
+        You are helping complete a calculator/spreadsheet entry.
+        
+        Context (other lines with values):
+        \(context)
+        
+        This line needs a numeric value: "\(lineText)"
+        
+        Respond with ONLY the complete line including a number value. Examples:
+        - "rent" → "rent 1500"
+        - "coffee budget" → "coffee budget 200"
+        - "tax rate" → "tax rate 15%"
+        
+        Complete this line:
+        """
+        
+        do {
+            let response = try await LLMManager.shared.generate(
+                prompt: prompt,
+                systemPrompt: "You complete calculator entries. Respond with only the completed line, nothing else.",
+                maxTokens: 50,
+                temperature: 0.3
+            )
+            let cleaned = response.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+                .replacingOccurrences(of: "\"", with: "")
+            return cleaned.isEmpty ? nil : cleaned
+        } catch {
+            return nil
+        }
+    }
+    
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
+        
+        // Clear click target rects
+        warningIconRects.removeAll()
+        confirmButtonRects.removeAll()
+        cancelButtonRects.removeAll()
         
         guard let textView = textView,
               let layoutManager = textView.layoutManager,
@@ -568,13 +698,67 @@ class ResultsNSView: NSView {
                     let lineRect = layoutManager.lineFragmentRect(forGlyphAt: glyphIndex, effectiveRange: nil)
                     let yPos = lineRect.origin.y + textView.textContainerInset.height + 3
                     
-                    // Draw subtle warning icon (⚠) at the right
-                    let warningAttrs: [NSAttributedString.Key: Any] = [
-                        .font: NSFont.systemFont(ofSize: 12),
-                        .foregroundColor: theme.secondaryTextColor.withAlphaComponent(0.4)
-                    ]
-                    let warningRect = NSRect(x: bounds.width - editorInset - 20, y: yPos + 2, width: 20, height: lineRect.height)
-                    ("⚠" as NSString).draw(in: warningRect, withAttributes: warningAttrs)
+                    // Check if we have a pending suggestion for this line
+                    if let suggestion = pendingSuggestions[index] {
+                        // Draw ghosted suggestion
+                        let ghostAttrs: [NSAttributedString.Key: Any] = [
+                            .font: NSFont.monospacedSystemFont(ofSize: 15, weight: .regular),
+                            .foregroundColor: theme.resultColor.withAlphaComponent(0.5)
+                        ]
+                        
+                        // Find what's different (the added part)
+                        let suggestionSuffix = suggestion.hasPrefix(line) 
+                            ? String(suggestion.dropFirst(line.count))
+                            : " → \(suggestion)"
+                        
+                        let textAttrs: [NSAttributedString.Key: Any] = [
+                            .font: NSFont.monospacedSystemFont(ofSize: 15, weight: .regular)
+                        ]
+                        let lineWidth = (line as NSString).size(withAttributes: textAttrs).width
+                        let ghostX = editorInset + lineWidth
+                        let ghostRect = NSRect(x: ghostX, y: yPos, width: bounds.width - ghostX - 60, height: lineRect.height)
+                        (suggestionSuffix as NSString).draw(in: ghostRect, withAttributes: ghostAttrs)
+                        
+                        // Draw confirm button (✓)
+                        let confirmAttrs: [NSAttributedString.Key: Any] = [
+                            .font: NSFont.systemFont(ofSize: 13, weight: .medium),
+                            .foregroundColor: NSColor.systemGreen
+                        ]
+                        let confirmRect = NSRect(x: bounds.width - editorInset - 45, y: yPos + 1, width: 20, height: lineRect.height)
+                        confirmButtonRects[index] = confirmRect
+                        ("✓" as NSString).draw(in: confirmRect, withAttributes: confirmAttrs)
+                        
+                        // Draw cancel button (✗)
+                        let cancelAttrs: [NSAttributedString.Key: Any] = [
+                            .font: NSFont.systemFont(ofSize: 13, weight: .medium),
+                            .foregroundColor: NSColor.systemRed.withAlphaComponent(0.8)
+                        ]
+                        let cancelRect = NSRect(x: bounds.width - editorInset - 25, y: yPos + 1, width: 20, height: lineRect.height)
+                        cancelButtonRects[index] = cancelRect
+                        ("✗" as NSString).draw(in: cancelRect, withAttributes: cancelAttrs)
+                    } else if loadingSuggestions.contains(index) {
+                        // Draw loading dots
+                        let loadingAttrs: [NSAttributedString.Key: Any] = [
+                            .font: NSFont.monospacedSystemFont(ofSize: 15, weight: .regular),
+                            .foregroundColor: NSColor.systemOrange.withAlphaComponent(0.6)
+                        ]
+                        let textAttrs: [NSAttributedString.Key: Any] = [
+                            .font: NSFont.monospacedSystemFont(ofSize: 15, weight: .regular)
+                        ]
+                        let lineWidth = (line as NSString).size(withAttributes: textAttrs).width
+                        let loadingX = editorInset + lineWidth + 8
+                        let loadingRect = NSRect(x: loadingX, y: yPos, width: 40, height: lineRect.height)
+                        (loadingFrames[loadingFrame] as NSString).draw(in: loadingRect, withAttributes: loadingAttrs)
+                    } else {
+                        // Draw warning icon (clickable)
+                        let warningAttrs: [NSAttributedString.Key: Any] = [
+                            .font: NSFont.systemFont(ofSize: 11),
+                            .foregroundColor: NSColor.systemOrange
+                        ]
+                        let warningRect = NSRect(x: bounds.width - editorInset - 20, y: yPos + 2, width: 20, height: lineRect.height)
+                        warningIconRects[index] = warningRect
+                        ("⚠" as NSString).draw(in: warningRect, withAttributes: warningAttrs)
+                    }
                 }
                 charIndex += line.count + 1
                 continue
