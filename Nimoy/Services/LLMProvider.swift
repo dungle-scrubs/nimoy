@@ -1,4 +1,7 @@
 import Foundation
+import os.log
+
+private let logger = Logger(subsystem: "com.nimoy.app", category: "LLMManager")
 
 // MARK: - LLM Provider Protocol
 
@@ -17,12 +20,14 @@ protocol LLMProvider {
 
 enum LLMProviderType: String, CaseIterable, Codable {
     case none = "None"
+    case mlx = "Local (MLX)"
     case ollama = "Local (Ollama)"
     case groq = "Cloud (Groq)"
     
     var icon: String {
         switch self {
         case .none: return "keyboard"
+        case .mlx: return "apple.logo"
         case .ollama: return "desktopcomputer"
         case .groq: return "cloud"
         }
@@ -31,6 +36,7 @@ enum LLMProviderType: String, CaseIterable, Codable {
     var description: String {
         switch self {
         case .none: return "Type manually, no AI features"
+        case .mlx: return "Apple native, ~1GB RAM (recommended for M-series)"
         case .ollama: return "Private, runs on your Mac (~1.2GB RAM)"
         case .groq: return "Fast cloud AI, requires API key"
         }
@@ -152,6 +158,7 @@ class LLMManager: ObservableObject {
     static let shared = LLMManager()
     
     @Published var providerType: LLMProviderType = .none  // Default: no AI
+    @Published var mlxAvailable = false
     @Published var ollamaAvailable = false
     @Published var groqAvailable = false
     
@@ -180,10 +187,12 @@ class LLMManager: ObservableObject {
         Task {
             let groq = await GroqService.shared.hasAPIKey
             let ollama = OllamaProvider.shared.isAvailable
+            let mlx = MLXProvider.shared.isAvailable
             
             await MainActor.run {
                 groqAvailable = groq
                 ollamaAvailable = ollama
+                mlxAvailable = mlx
             }
         }
     }
@@ -195,24 +204,45 @@ class LLMManager: ObservableObject {
         maxTokens: Int = 500,
         temperature: Double = 0.7
     ) async throws -> String {
+        logger.info("LLMManager.generate called with provider: \(self.providerType.rawValue)")
+        logger.info("Prompt length: \(prompt.count), maxTokens: \(maxTokens)")
+        
+        let result: String
         switch providerType {
         case .none:
+            logger.error("Provider is .none, throwing notConfigured")
             throw LLMError.notConfigured
+        case .mlx:
+            logger.info("Routing to MLXProvider...")
+            result = try await MLXProvider.shared.complete(
+                prompt: prompt,
+                systemPrompt: systemPrompt,
+                maxTokens: maxTokens,
+                temperature: temperature
+            )
+            logger.info("MLXProvider returned result of length: \(result.count)")
+            return result
         case .groq:
-            return try await GroqService.shared.complete(
+            logger.info("Routing to GroqService...")
+            result = try await GroqService.shared.complete(
                 prompt: prompt,
                 systemPrompt: systemPrompt,
                 maxTokens: maxTokens,
                 temperature: temperature,
                 model: "llama-3.3-70b-versatile"
             )
+            logger.info("GroqService returned result of length: \(result.count)")
+            return result
         case .ollama:
-            return try await OllamaProvider.shared.complete(
+            logger.info("Routing to OllamaProvider...")
+            result = try await OllamaProvider.shared.complete(
                 prompt: prompt,
                 systemPrompt: systemPrompt,
                 maxTokens: maxTokens,
                 temperature: temperature
             )
+            logger.info("OllamaProvider returned result of length: \(result.count)")
+            return result
         }
     }
     
@@ -224,6 +254,13 @@ class LLMManager: ObservableObject {
         switch providerType {
         case .none:
             throw LLMError.notConfigured
+        case .mlx:
+            return try await MLXProvider.shared.complete(
+                prompt: prompt,
+                systemPrompt: systemPrompt,
+                maxTokens: 100,
+                temperature: 0.3
+            )
         case .groq:
             return try await GroqService.shared.complete(
                 prompt: prompt,
