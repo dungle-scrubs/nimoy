@@ -235,7 +235,7 @@ class Evaluator {
                     sectionCurrencyOrder.append(unit.name)
                 }
             }
-            return .number(value.number, value.unit, value.isCurrencyConversion)
+            return .number(value.number, value.unit, isCurrencyConversion: value.isCurrencyConversion)
         } catch let error as EvalError {
             return .error(error.message)
         } catch {
@@ -271,9 +271,9 @@ class Evaluator {
         // Evaluate the value part (could have units)
         if let valueResult = evaluate(valueStr) {
             switch valueResult {
-            case .number(let value, let unit, _):
+            case .number(let value, let unit, _, _):
                 let result = value / (percent / 100.0)
-                return .number(result, unit, false)
+                return .number(result, unit)
             default:
                 return nil
             }
@@ -348,7 +348,7 @@ class Evaluator {
     }
     
     private func saveResultToVariable(_ varName: String, result: EvaluationResult) {
-        if case .number(let value, let unit, _) = result {
+        if case .number(let value, let unit, _, _) = result {
             let val = Value(value, unit: unit)
             variables[varName] = val
             sectionValues.append(val)
@@ -371,7 +371,7 @@ class Evaluator {
             }
         }
         
-        return .number(total, targetUnit)
+        return .aggregate(total, targetUnit)
     }
     
     private func averageInCurrency(_ targetCurrencyName: String) -> EvaluationResult {
@@ -380,7 +380,7 @@ class Evaluator {
         }
         
         guard !sectionValues.isEmpty else {
-            return .number(0, targetUnit)
+            return .aggregate(0, targetUnit)
         }
         
         var total: Double = 0
@@ -394,17 +394,17 @@ class Evaluator {
             }
         }
         
-        return .number(total / Double(sectionValues.count), targetUnit)
+        return .aggregate(total / Double(sectionValues.count), targetUnit)
     }
     
     private func sumWithDefaultCurrency() -> EvaluationResult {
         let (total, targetUnit) = aggregateWithDefaultCurrency(operation: .sum)
-        return .number(total, targetUnit)
+        return .aggregate(total, targetUnit)
     }
     
     private func averageWithDefaultCurrency() -> EvaluationResult {
         let (avg, targetUnit) = aggregateWithDefaultCurrency(operation: .average)
-        return .number(avg, targetUnit)
+        return .aggregate(avg, targetUnit)
     }
     
     private enum AggregateOperation {
@@ -548,7 +548,7 @@ class Evaluator {
            let targetUnit = UnitConverter.shared.unit(named: targetName) {
             let converted = UnitConverter.shared.convert(amount, from: sourceUnit, to: targetUnit)
             let isCurrencyConversion = sourceUnit.category == .currency && targetUnit.category == .currency
-            return .number(converted, targetUnit, isCurrencyConversion)
+            return .number(converted, targetUnit, isCurrencyConversion: isCurrencyConversion)
         }
         
         return nil
