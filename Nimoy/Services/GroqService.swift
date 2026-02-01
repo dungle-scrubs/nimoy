@@ -32,6 +32,11 @@ actor GroqService {
         !apiKey.isEmpty
     }
     
+    /// Alias for isConfigured
+    var hasAPIKey: Bool {
+        !apiKey.isEmpty
+    }
+    
     /// Autocomplete a calculator expression
     /// - Parameters:
     ///   - input: The current line the user is typing
@@ -164,6 +169,40 @@ enum GroqError: Error, LocalizedError {
         case .noAPIKey:
             return "No Groq API key configured. Set GROQ_API_KEY environment variable or add to settings."
         }
+    }
+}
+
+// MARK: - General Completion
+
+extension GroqService {
+    
+    /// General completion method for flexible LLM usage
+    func complete(
+        prompt: String,
+        systemPrompt: String?,
+        maxTokens: Int,
+        temperature: Double,
+        model: String
+    ) async throws -> String {
+        guard !apiKey.isEmpty else {
+            throw GroqError.noAPIKey
+        }
+        
+        var messages: [GroqMessage] = []
+        if let system = systemPrompt {
+            messages.append(.init(role: "system", content: system))
+        }
+        messages.append(.init(role: "user", content: prompt))
+        
+        let request = GroqRequest(
+            model: model,
+            messages: messages,
+            maxTokens: maxTokens,
+            temperature: temperature
+        )
+        
+        let response = try await sendRequest(request)
+        return response.choices.first?.message.content ?? ""
     }
 }
 
