@@ -25,7 +25,7 @@ final class EvaluatorTests: XCTestCase {
             XCTFail("Result was nil", file: file, line: line)
             return
         }
-        if case .number(let value, let resultUnit, _) = result {
+        if case .number(let value, let resultUnit, _, _) = result {
             XCTAssertEqual(value, expected, accuracy: accuracy, file: file, line: line)
             if let expectedUnitName = unitName {
                 XCTAssertEqual(resultUnit?.name, expectedUnitName, file: file, line: line)
@@ -39,90 +39,90 @@ final class EvaluatorTests: XCTestCase {
     
     func testSimpleAddition() {
         let result = evaluator.evaluate("18 + 23")
-        XCTAssertEqual(result, .number(41, nil, false))
+        XCTAssertEqual(result, .number(41, nil, false, false))
     }
     
     func testSimpleSubtraction() {
         let result = evaluator.evaluate("50 - 8")
-        XCTAssertEqual(result, .number(42, nil, false))
+        XCTAssertEqual(result, .number(42, nil, false, false))
     }
     
     func testSimpleMultiplication() {
         let result = evaluator.evaluate("6 * 7")
-        XCTAssertEqual(result, .number(42, nil, false))
+        XCTAssertEqual(result, .number(42, nil, false, false))
     }
     
     func testSimpleDivision() {
         let result = evaluator.evaluate("84 / 2")
-        XCTAssertEqual(result, .number(42, nil, false))
+        XCTAssertEqual(result, .number(42, nil, false, false))
     }
     
     // MARK: - Natural Language Operators
     
     func testPlusKeyword() {
         let result = evaluator.evaluate("18 plus 23")
-        XCTAssertEqual(result, .number(41, nil, false))
+        XCTAssertEqual(result, .number(41, nil, false, false))
     }
     
     func testMinusKeyword() {
         let result = evaluator.evaluate("50 minus 8")
-        XCTAssertEqual(result, .number(42, nil, false))
+        XCTAssertEqual(result, .number(42, nil, false, false))
     }
     
     func testTimesKeyword() {
         let result = evaluator.evaluate("6 times 7")
-        XCTAssertEqual(result, .number(42, nil, false))
+        XCTAssertEqual(result, .number(42, nil, false, false))
     }
     
     func testDividedByKeyword() {
         let result = evaluator.evaluate("84 divided by 2")
-        XCTAssertEqual(result, .number(42, nil, false))
+        XCTAssertEqual(result, .number(42, nil, false, false))
     }
     
     func testXAsMultiply() {
         let result = evaluator.evaluate("6 x 7")
-        XCTAssertEqual(result, .number(42, nil, false))
+        XCTAssertEqual(result, .number(42, nil, false, false))
     }
     
     // MARK: - Natural Language Stripping
     
     func testStripUnknownWords() {
         let result = evaluator.evaluate("18 apples + 23")
-        XCTAssertEqual(result, .number(41, nil, false))
+        XCTAssertEqual(result, .number(41, nil, false, false))
     }
     
     func testStripMultipleUnknownWords() {
         let result = evaluator.evaluate("18 apples plus 49 pears")
-        XCTAssertEqual(result, .number(67, nil, false))
+        XCTAssertEqual(result, .number(67, nil, false, false))
     }
     
     func testStripForPhrase() {
         let result = evaluator.evaluate("100 + 50 for groceries")
-        XCTAssertEqual(result, .number(150, nil, false))
+        XCTAssertEqual(result, .number(150, nil, false, false))
     }
     
     func testStripOnPhrase() {
         let result = evaluator.evaluate("200 on rent + 100")
-        XCTAssertEqual(result, .number(300, nil, false))
+        XCTAssertEqual(result, .number(300, nil, false, false))
     }
     
     // MARK: - Variables
     
     func testVariableAssignment() {
         let result = evaluator.evaluate("x = 42")
-        XCTAssertEqual(result, .number(42, nil, false))
+        XCTAssertEqual(result, .number(42, nil, false, false))
     }
     
     func testVariableReference() {
         _ = evaluator.evaluate("x = 42")
         let result = evaluator.evaluate("x")
-        XCTAssertEqual(result, .number(42, nil, false))
+        XCTAssertEqual(result, .number(42, nil, false, false))
     }
     
     func testVariableInExpression() {
         _ = evaluator.evaluate("x = 10")
         let result = evaluator.evaluate("x + 5")
-        XCTAssertEqual(result, .number(15, nil, false))
+        XCTAssertEqual(result, .number(15, nil, false, false))
     }
     
     // MARK: - Sum
@@ -141,14 +141,16 @@ final class EvaluatorTests: XCTestCase {
         _ = evaluator.evaluate("18 + 23")  // 41
         _ = evaluator.evaluate("18 + 49")  // 67
         let result = evaluator.evaluate("sum")
-        XCTAssertEqual(result, .number(108, nil, false))
+        // Sum returns aggregate (isAggregate = true)
+        XCTAssertEqual(result, .number(108, nil, false, true))
     }
     
     func testSumMixedExpressionsAndVariables() {
         _ = evaluator.evaluate("x = 10")
         _ = evaluator.evaluate("20 + 5")  // 25
         let result = evaluator.evaluate("sum")
-        XCTAssertEqual(result, .number(35, nil, false))
+        // Sum returns aggregate (isAggregate = true)
+        XCTAssertEqual(result, .number(35, nil, false, true))
     }
     
     // MARK: - Number with Unit (no space)
@@ -157,7 +159,7 @@ final class EvaluatorTests: XCTestCase {
         let result = evaluator.evaluate("5000THB")
         // Should parse as 5000 THB
         XCTAssertNotNil(result)
-        if case .number(let value, let unit, _) = result {
+        if case .number(let value, let unit, _, _) = result {
             XCTAssertEqual(value, 5000)
             XCTAssertEqual(unit?.name, "thb")
         } else {
@@ -169,7 +171,7 @@ final class EvaluatorTests: XCTestCase {
         let result = evaluator.evaluate("100USD + 50USD")
         // Should parse as 100 USD + 50 USD = 150 USD
         XCTAssertNotNil(result)
-        if case .number(let value, _, _) = result {
+        if case .number(let value, _, _, _) = result {
             XCTAssertEqual(value, 150)
         } else {
             XCTFail("Expected number result")
@@ -179,14 +181,15 @@ final class EvaluatorTests: XCTestCase {
     func testStripMisspelledWord() {
         // "pearsss" should be stripped like "pears"
         let result = evaluator.evaluate("18 apples plus 49 pearsss")
-        XCTAssertEqual(result, .number(67, nil, false))
+        XCTAssertEqual(result, .number(67, nil, false, false))
     }
     
     func testSumAfterStrippedExpressions() {
         _ = evaluator.evaluate("18 apples + 23")  // 41
         _ = evaluator.evaluate("18 apples plus 49 pearsss")  // 67
         let result = evaluator.evaluate("fruit = sum")
-        XCTAssertEqual(result, .number(108, nil, false))
+        // Sum returns aggregate (isAggregate = true)
+        XCTAssertEqual(result, .number(108, nil, false, true))
     }
     
     // MARK: - Comments
@@ -203,7 +206,7 @@ final class EvaluatorTests: XCTestCase {
     
     func testInlineComment() {
         let result = evaluator.evaluate("42 // the answer")
-        XCTAssertEqual(result, .number(42, nil, false))
+        XCTAssertEqual(result, .number(42, nil, false, false))
     }
     
     // MARK: - Empty Lines
@@ -384,7 +387,7 @@ final class EvaluatorTests: XCTestCase {
     
     func testCurrencyConversionFlag() {
         let result = evaluator.evaluate("$100 in eur")
-        if case .number(_, _, let isConversion) = result {
+        if case .number(_, _, let isConversion, _) = result {
             XCTAssertTrue(isConversion)
         } else {
             XCTFail("Expected number result")
@@ -393,7 +396,7 @@ final class EvaluatorTests: XCTestCase {
     
     func testNonCurrencyConversionNoFlag() {
         let result = evaluator.evaluate("100 cm in inches")
-        if case .number(_, _, let isConversion) = result {
+        if case .number(_, _, let isConversion, _) = result {
             XCTAssertFalse(isConversion)
         } else {
             XCTFail("Expected number result")
