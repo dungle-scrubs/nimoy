@@ -13,6 +13,7 @@ struct ActionPalette: View {
     @EnvironmentObject var appState: AppState
     @State private var searchText: String = ""
     @State private var selectedIndex: Int = 0
+    @State private var eventMonitor: Any?
     
     var actions: [AppAction] {
         [
@@ -73,17 +74,14 @@ struct ActionPalette: View {
                     .background(Color.gray.opacity(0.3))
                 
                 // Actions list
-                ScrollView {
-                    VStack(spacing: 0) {
-                        ForEach(Array(filteredActions.enumerated()), id: \.element.id) { index, action in
-                            ActionRow(action: action, isSelected: index == selectedIndex)
-                                .onTapGesture {
-                                    action.action()
-                                }
-                        }
+                VStack(spacing: 0) {
+                    ForEach(Array(filteredActions.enumerated()), id: \.element.id) { index, action in
+                        ActionRow(action: action, isSelected: index == selectedIndex)
+                            .onTapGesture {
+                                action.action()
+                            }
                     }
                 }
-                .frame(maxHeight: 300)
             }
             .frame(width: 400)
             .background(Color(white: 0.15))
@@ -91,37 +89,59 @@ struct ActionPalette: View {
             .shadow(color: .black.opacity(0.5), radius: 20)
             .onAppear {
                 selectedIndex = 0
+                setupEventMonitor()
             }
-            .background(
-                KeyEventHandler { event in
-                    handleKeyEvent(event)
-                }
-            )
+            .onDisappear {
+                removeEventMonitor()
+            }
         }
     }
     
-    private func handleKeyEvent(_ event: NSEvent) -> Bool {
-        switch event.keyCode {
-        case 53: // Escape
-            appState.showActions = false
-            return true
-        case 125: // Down arrow
-            if selectedIndex < filteredActions.count - 1 {
-                selectedIndex += 1
+    private func setupEventMonitor() {
+        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [self] event in
+            switch event.keyCode {
+            case 53: // Escape
+                DispatchQueue.main.async {
+                    appState.showActions = false
+                }
+                return nil
+            case 125: // Down arrow
+                DispatchQueue.main.async {
+                    if filteredActions.isEmpty { return }
+                    if selectedIndex >= filteredActions.count - 1 {
+                        selectedIndex = 0  // Wrap to top
+                    } else {
+                        selectedIndex += 1
+                    }
+                }
+                return nil
+            case 126: // Up arrow
+                DispatchQueue.main.async {
+                    if filteredActions.isEmpty { return }
+                    if selectedIndex <= 0 {
+                        selectedIndex = filteredActions.count - 1  // Wrap to bottom
+                    } else {
+                        selectedIndex -= 1
+                    }
+                }
+                return nil
+            case 36: // Return
+                DispatchQueue.main.async {
+                    if selectedIndex < filteredActions.count {
+                        filteredActions[selectedIndex].action()
+                    }
+                }
+                return nil
+            default:
+                return event
             }
-            return true
-        case 126: // Up arrow
-            if selectedIndex > 0 {
-                selectedIndex -= 1
-            }
-            return true
-        case 36: // Return
-            if selectedIndex < filteredActions.count {
-                filteredActions[selectedIndex].action()
-            }
-            return true
-        default:
-            return false
+        }
+    }
+    
+    private func removeEventMonitor() {
+        if let monitor = eventMonitor {
+            NSEvent.removeMonitor(monitor)
+            eventMonitor = nil
         }
     }
 }
@@ -153,28 +173,4 @@ struct ActionRow: View {
     }
 }
 
-struct KeyEventHandler: NSViewRepresentable {
-    let handler: (NSEvent) -> Bool
-    
-    func makeNSView(context: Context) -> KeyEventView {
-        let view = KeyEventView()
-        view.handler = handler
-        return view
-    }
-    
-    func updateNSView(_ nsView: KeyEventView, context: Context) {
-        nsView.handler = handler
-    }
-}
 
-class KeyEventView: NSView {
-    var handler: ((NSEvent) -> Bool)?
-    
-    override var acceptsFirstResponder: Bool { true }
-    
-    override func keyDown(with event: NSEvent) {
-        if handler?(event) != true {
-            super.keyDown(with: event)
-        }
-    }
-}

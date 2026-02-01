@@ -10,10 +10,12 @@ struct MainWindow: View {
             
             if appState.showSearch {
                 SearchOverlay()
+                    .id(appState.searchId)
             }
             
             if appState.showActions {
                 ActionPalette()
+                    .id(appState.actionsId)
             }
         }
         .frame(minWidth: 500, minHeight: 300)

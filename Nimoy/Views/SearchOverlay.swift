@@ -5,6 +5,8 @@ struct SearchOverlay: View {
     @EnvironmentObject var appState: AppState
     @State private var searchText = ""
     @State private var selectedIndex = 0
+    @FocusState private var isSearchFocused: Bool
+    @State private var eventMonitor: Any?
     
     private var filteredPages: [Page] {
         appState.searchPages(query: searchText)
@@ -27,14 +29,11 @@ struct SearchOverlay: View {
                         .foregroundColor(.secondary)
                         .font(.system(size: 18))
                     
-                    SearchTextField(
-                        text: $searchText,
-                        onSubmit: { selectCurrentPage() },
-                        onEscape: { close() },
-                        onArrowUp: { moveSelection(by: -1) },
-                        onArrowDown: { moveSelection(by: 1) }
-                    )
-                    .frame(height: 24)
+                    TextField("Search pages...", text: $searchText)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 18))
+                        .focused($isSearchFocused)
+                        .onSubmit { selectCurrentPage() }
                     
                     if !searchText.isEmpty {
                         Button(action: { searchText = "" }) {
@@ -50,41 +49,41 @@ struct SearchOverlay: View {
                 Divider()
                 
                 // Results list
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack(spacing: 0) {
-                            ForEach(Array(filteredPages.enumerated()), id: \.element.id) { index, page in
-                                SearchResultRow(
-                                    page: page,
-                                    searchQuery: searchText,
-                                    isSelected: index == selectedIndex
-                                )
-                                .id(index)
-                                .onTapGesture {
-                                    navigateToPage(page)
-                                }
-                            }
-                            
-                            if filteredPages.isEmpty && !searchText.isEmpty {
-                                VStack(spacing: 8) {
-                                    Text("No pages found")
-                                        .foregroundColor(.secondary)
-                                    
-                                    Button("Create \"\(searchText)\"") {
-                                        createNewPage(titled: searchText)
+                if !filteredPages.isEmpty {
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            LazyVStack(spacing: 0) {
+                                ForEach(Array(filteredPages.enumerated()), id: \.element.id) { index, page in
+                                    SearchResultRow(
+                                        page: page,
+                                        searchQuery: searchText,
+                                        isSelected: index == selectedIndex
+                                    )
+                                    .id(index)
+                                    .onTapGesture {
+                                        navigateToPage(page)
                                     }
-                                    .buttonStyle(.borderless)
                                 }
-                                .padding(.vertical, 24)
+                            }
+                        }
+                        .frame(maxHeight: min(CGFloat(filteredPages.count) * 52, 300))
+                        .onChange(of: selectedIndex) { _, newIndex in
+                            withAnimation {
+                                proxy.scrollTo(newIndex, anchor: .center)
                             }
                         }
                     }
-                    .frame(maxHeight: 300)
-                    .onChange(of: selectedIndex) { _, newIndex in
-                        withAnimation {
-                            proxy.scrollTo(newIndex, anchor: .center)
+                } else if !searchText.isEmpty {
+                    VStack(spacing: 8) {
+                        Text("No pages found")
+                            .foregroundColor(.secondary)
+                        
+                        Button("Create \"\(searchText)\"") {
+                            createNewPage(titled: searchText)
                         }
+                        .buttonStyle(.borderless)
                     }
+                    .padding(.vertical, 24)
                 }
             }
             .background(.regularMaterial)
@@ -96,14 +95,23 @@ struct SearchOverlay: View {
         .onAppear {
             searchText = ""
             selectedIndex = 0
+            isSearchFocused = true
+            setupEventMonitor()
+        }
+        .onDisappear {
+            removeEventMonitor()
         }
     }
     
     private func moveSelection(by delta: Int) {
-        let newIndex = selectedIndex + delta
-        if newIndex >= 0 && newIndex < filteredPages.count {
-            selectedIndex = newIndex
+        guard !filteredPages.isEmpty else { return }
+        var newIndex = selectedIndex + delta
+        if newIndex < 0 {
+            newIndex = filteredPages.count - 1  // Wrap to bottom
+        } else if newIndex >= filteredPages.count {
+            newIndex = 0  // Wrap to top
         }
+        selectedIndex = newIndex
     }
     
     private func selectCurrentPage() {
@@ -128,74 +136,29 @@ struct SearchOverlay: View {
     private func close() {
         appState.showSearch = false
     }
-}
-
-struct SearchTextField: NSViewRepresentable {
-    @Binding var text: String
-    var onSubmit: () -> Void
-    var onEscape: () -> Void
-    var onArrowUp: () -> Void
-    var onArrowDown: () -> Void
     
-    func makeNSView(context: Context) -> NSTextField {
-        let textField = NSTextField()
-        textField.delegate = context.coordinator
-        textField.placeholderString = "Search pages..."
-        textField.font = .systemFont(ofSize: 18)
-        textField.isBordered = false
-        textField.backgroundColor = .clear
-        textField.focusRingType = .none
-        textField.stringValue = ""
-        
-        // Focus on creation
-        DispatchQueue.main.async {
-            textField.window?.makeFirstResponder(textField)
-        }
-        
-        return textField
-    }
-    
-    func updateNSView(_ nsView: NSTextField, context: Context) {
-        if nsView.stringValue != text {
-            nsView.stringValue = text
+    private func setupEventMonitor() {
+        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            switch event.keyCode {
+            case 53: // Escape
+                DispatchQueue.main.async { close() }
+                return nil
+            case 125: // Down arrow
+                DispatchQueue.main.async { moveSelection(by: 1) }
+                return nil
+            case 126: // Up arrow
+                DispatchQueue.main.async { moveSelection(by: -1) }
+                return nil
+            default:
+                return event
+            }
         }
     }
     
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-    
-    class Coordinator: NSObject, NSTextFieldDelegate {
-        var parent: SearchTextField
-        
-        init(_ parent: SearchTextField) {
-            self.parent = parent
-        }
-        
-        func controlTextDidChange(_ obj: Notification) {
-            if let textField = obj.object as? NSTextField {
-                parent.text = textField.stringValue
-            }
-        }
-        
-        func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
-            if commandSelector == #selector(NSResponder.insertNewline(_:)) {
-                parent.onSubmit()
-                return true
-            }
-            if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
-                parent.onEscape()
-                return true
-            }
-            if commandSelector == #selector(NSResponder.moveUp(_:)) {
-                parent.onArrowUp()
-                return true
-            }
-            if commandSelector == #selector(NSResponder.moveDown(_:)) {
-                parent.onArrowDown()
-                return true
-            }
-            return false
+    private func removeEventMonitor() {
+        if let monitor = eventMonitor {
+            NSEvent.removeMonitor(monitor)
+            eventMonitor = nil
         }
     }
 }

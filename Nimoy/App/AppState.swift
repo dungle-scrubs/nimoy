@@ -5,8 +5,10 @@ import Combine
 class AppState: ObservableObject {
     @Published var pages: [Page] = []
     @Published var currentPageIndex: Int = 0
-    @Published var showSearch: Bool = false
-    @Published var showActions: Bool = false
+    @Published var showSearch: Bool = false { didSet { if showSearch { searchId = UUID() } } }
+    @Published var showActions: Bool = false { didSet { if showActions { actionsId = UUID() } } }
+    @Published var searchId = UUID()
+    @Published var actionsId = UUID()
     
     private let storageURL: URL
     
