@@ -6,6 +6,7 @@ class AppState: ObservableObject {
     @Published var pages: [Page] = []
     @Published var currentPageIndex: Int = 0
     @Published var showSearch: Bool = false
+    @Published var showActions: Bool = false
     
     private let storageURL: URL
     
@@ -85,6 +86,27 @@ class AppState: ObservableObject {
             let content = page.content.lowercased()
             return title.contains(q) || content.contains(q)
         }
+    }
+    
+    func exportCurrentPage() {
+        guard let page = currentPage else { return }
+        
+        let savePanel = NSSavePanel()
+        savePanel.allowedContentTypes = [.plainText]
+        savePanel.nameFieldStringValue = "\(page.title).txt"
+        savePanel.title = "Export Page"
+        
+        savePanel.begin { response in
+            if response == .OK, let url = savePanel.url {
+                try? page.content.write(to: url, atomically: true, encoding: .utf8)
+            }
+        }
+    }
+    
+    func copyCurrentPageToClipboard() {
+        guard let page = currentPage else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(page.content, forType: .string)
     }
     
     // MARK: - Persistence

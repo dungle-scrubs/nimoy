@@ -27,6 +27,23 @@ struct NimoyApp: App {
                     appState.showSearch = true
                 }
                 .keyboardShortcut("o", modifiers: .command)
+                
+                Button("Actions...") {
+                    appState.showActions = true
+                }
+                .keyboardShortcut("k", modifiers: .command)
+                
+                Divider()
+                
+                Button("Export...") {
+                    appState.exportCurrentPage()
+                }
+                .keyboardShortcut("e", modifiers: .command)
+                
+                Button("Copy to Clipboard") {
+                    appState.copyCurrentPageToClipboard()
+                }
+                .keyboardShortcut("c", modifiers: [.command, .shift])
             }
         }
     }
@@ -51,6 +68,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 case "o":
                     DispatchQueue.main.async {
                         self.appState?.showSearch = true
+                    }
+                    return nil
+                case "k":
+                    DispatchQueue.main.async {
+                        self.appState?.showActions = true
+                    }
+                    return nil
+                case "e":
+                    DispatchQueue.main.async {
+                        self.appState?.exportCurrentPage()
                     }
                     return nil
                 default:

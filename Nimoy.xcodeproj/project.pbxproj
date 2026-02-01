@@ -18,6 +18,7 @@
 		A10000000000000000000009 /* PageCarousel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* PageCarousel.swift */; };
 		A10000000000000000000010 /* SearchOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* SearchOverlay.swift */; };
 		A10000000000000000000016 /* LoadingDots.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* LoadingDots.swift */; };
+		A10000000000000000000017 /* ActionPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000017 /* ActionPalette.swift */; };
 		A10000000000000000000011 /* UnitConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* UnitConverter.swift */; };
 		A10000000000000000000012 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* Assets.xcassets */; };
 		A10000000000000000000013 /* SyntaxHighlighter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* SyntaxHighlighter.swift */; };
@@ -49,6 +50,7 @@
 		A20000000000000000000009 /* PageCarousel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageCarousel.swift; sourceTree = "<group>"; };
 		A20000000000000000000010 /* SearchOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchOverlay.swift; sourceTree = "<group>"; };
 		A20000000000000000000016 /* LoadingDots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingDots.swift; sourceTree = "<group>"; };
+		A20000000000000000000017 /* ActionPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionPalette.swift; sourceTree = "<group>"; };
 		A20000000000000000000011 /* UnitConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnitConverter.swift; sourceTree = "<group>"; };
 		A20000000000000000000012 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A20000000000000000000013 /* SyntaxHighlighter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyntaxHighlighter.swift; sourceTree = "<group>"; };
@@ -136,6 +138,7 @@
 				A20000000000000000000009 /* PageCarousel.swift */,
 				A20000000000000000000010 /* SearchOverlay.swift */,
 				A20000000000000000000016 /* LoadingDots.swift */,
+				A20000000000000000000017 /* ActionPalette.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -278,6 +281,7 @@
 				A10000000000000000000009 /* PageCarousel.swift in Sources */,
 				A10000000000000000000010 /* SearchOverlay.swift in Sources */,
 				A10000000000000000000016 /* LoadingDots.swift in Sources */,
+				A10000000000000000000017 /* ActionPalette.swift in Sources */,
 				A10000000000000000000011 /* UnitConverter.swift in Sources */,
 				A10000000000000000000013 /* SyntaxHighlighter.swift in Sources */,
 				A10000000000000000000014 /* CryptoService.swift in Sources */,
