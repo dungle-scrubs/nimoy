@@ -356,6 +356,13 @@ class Evaluator {
     }
     
     private func sumInCurrency(_ targetCurrencyName: String) -> EvaluationResult {
+        let targetLower = targetCurrencyName.lowercased()
+        
+        // Check if target is a crypto currency
+        if CryptoPriceCache.shared.isCrypto(targetLower) {
+            return sumInCrypto(targetLower)
+        }
+        
         guard let targetUnit = UnitConverter.shared.unit(named: targetCurrencyName) else {
             return .error("Unknown currency: \(targetCurrencyName)")
         }
@@ -374,7 +381,47 @@ class Evaluator {
         return .aggregate(total, targetUnit)
     }
     
+    private func sumInCrypto(_ crypto: String) -> EvaluationResult {
+        if CryptoPriceCache.shared.isLoading() {
+            return .text("Loading crypto prices...")
+        }
+        
+        // First convert everything to USD
+        guard let usdUnit = UnitConverter.shared.unit(named: "usd") else {
+            return .error("USD unit not found")
+        }
+        
+        var totalUSD: Double = 0
+        
+        for value in sectionValues {
+            if let sourceUnit = value.unit, sourceUnit.category == .currency {
+                let usdValue = UnitConverter.shared.convert(value.number, from: sourceUnit, to: usdUnit)
+                totalUSD += usdValue
+            } else {
+                totalUSD += value.number
+            }
+        }
+        
+        // Convert USD to crypto
+        guard let cryptoAmount = CryptoPriceCache.shared.convertFromUSD(usdAmount: totalUSD, crypto: crypto) else {
+            return .error("Crypto price unavailable")
+        }
+        
+        // Create a crypto unit for display
+        let symbol = CryptoPriceCache.shared.getSymbol(crypto)
+        let cryptoUnit = Unit(name: crypto.uppercased(), symbol: symbol, category: .currency, factor: 1.0)
+        
+        return .aggregate(cryptoAmount, cryptoUnit, isCurrencyConversion: true)
+    }
+    
     private func averageInCurrency(_ targetCurrencyName: String) -> EvaluationResult {
+        let targetLower = targetCurrencyName.lowercased()
+        
+        // Check if target is a crypto currency
+        if CryptoPriceCache.shared.isCrypto(targetLower) {
+            return averageInCrypto(targetLower)
+        }
+        
         guard let targetUnit = UnitConverter.shared.unit(named: targetCurrencyName) else {
             return .error("Unknown currency: \(targetCurrencyName)")
         }
@@ -395,6 +442,47 @@ class Evaluator {
         }
         
         return .aggregate(total / Double(sectionValues.count), targetUnit)
+    }
+    
+    private func averageInCrypto(_ crypto: String) -> EvaluationResult {
+        if CryptoPriceCache.shared.isLoading() {
+            return .text("Loading crypto prices...")
+        }
+        
+        guard !sectionValues.isEmpty else {
+            let symbol = CryptoPriceCache.shared.getSymbol(crypto)
+            let cryptoUnit = Unit(name: crypto.uppercased(), symbol: symbol, category: .currency, factor: 1.0)
+            return .aggregate(0, cryptoUnit)
+        }
+        
+        // First convert everything to USD
+        guard let usdUnit = UnitConverter.shared.unit(named: "usd") else {
+            return .error("USD unit not found")
+        }
+        
+        var totalUSD: Double = 0
+        
+        for value in sectionValues {
+            if let sourceUnit = value.unit, sourceUnit.category == .currency {
+                let usdValue = UnitConverter.shared.convert(value.number, from: sourceUnit, to: usdUnit)
+                totalUSD += usdValue
+            } else {
+                totalUSD += value.number
+            }
+        }
+        
+        let avgUSD = totalUSD / Double(sectionValues.count)
+        
+        // Convert USD to crypto
+        guard let cryptoAmount = CryptoPriceCache.shared.convertFromUSD(usdAmount: avgUSD, crypto: crypto) else {
+            return .error("Crypto price unavailable")
+        }
+        
+        // Create a crypto unit for display
+        let symbol = CryptoPriceCache.shared.getSymbol(crypto)
+        let cryptoUnit = Unit(name: crypto.uppercased(), symbol: symbol, category: .currency, factor: 1.0)
+        
+        return .aggregate(cryptoAmount, cryptoUnit, isCurrencyConversion: true)
     }
     
     private func sumWithDefaultCurrency() -> EvaluationResult {
