@@ -3,10 +3,12 @@ import Foundation
 struct Value: Equatable {
     var number: Double
     var unit: Unit?
+    var isCurrencyConversion: Bool = false
     
-    init(_ number: Double, unit: Unit? = nil) {
+    init(_ number: Double, unit: Unit? = nil, isCurrencyConversion: Bool = false) {
         self.number = number
         self.unit = unit
+        self.isCurrencyConversion = isCurrencyConversion
     }
     
     static func + (lhs: Value, rhs: Value) -> Value {
@@ -85,6 +87,11 @@ class Evaluator {
         // Skip comments and markdown headings
         if trimmed.hasPrefix("//") || trimmed.hasPrefix("#") {
             return nil
+        }
+        
+        // Handle "X% of what is Y" pattern (reverse percentage)
+        if let reverseResult = tryParseReversePercentage(trimmed) {
+            return reverseResult
         }
         
         // Remove inline comments for evaluation
@@ -228,12 +235,51 @@ class Evaluator {
                     sectionCurrencyOrder.append(unit.name)
                 }
             }
-            return .number(value.number, value.unit)
+            return .number(value.number, value.unit, value.isCurrencyConversion)
         } catch let error as EvalError {
             return .error(error.message)
         } catch {
             return .error(error.localizedDescription)
         }
+    }
+    
+    /// Parse "X% of what is Y" → Y / (X/100)
+    /// Example: "20% of what is 30 cm" → 150 cm
+    private func tryParseReversePercentage(_ input: String) -> EvaluationResult? {
+        let pattern = try! NSRegularExpression(
+            pattern: #"^(\d+(?:\.\d+)?)\s*%\s+of\s+what\s+is\s+(.+)$"#,
+            options: .caseInsensitive
+        )
+        
+        let range = NSRange(input.startIndex..., in: input)
+        guard let match = pattern.firstMatch(in: input, options: [], range: range) else {
+            return nil
+        }
+        
+        guard let percentRange = Range(match.range(at: 1), in: input),
+              let valueRange = Range(match.range(at: 2), in: input) else {
+            return nil
+        }
+        
+        let percentStr = String(input[percentRange])
+        let valueStr = String(input[valueRange])
+        
+        guard let percent = Double(percentStr), percent != 0 else {
+            return nil
+        }
+        
+        // Evaluate the value part (could have units)
+        if let valueResult = evaluate(valueStr) {
+            switch valueResult {
+            case .number(let value, let unit, _):
+                let result = value / (percent / 100.0)
+                return .number(result, unit, false)
+            default:
+                return nil
+            }
+        }
+        
+        return nil
     }
     
     private func tryParseAssignment(_ lowercased: String, original: String) -> EvaluationResult? {
@@ -302,7 +348,7 @@ class Evaluator {
     }
     
     private func saveResultToVariable(_ varName: String, result: EvaluationResult) {
-        if case .number(let value, let unit) = result {
+        if case .number(let value, let unit, _) = result {
             let val = Value(value, unit: unit)
             variables[varName] = val
             sectionValues.append(val)
@@ -501,7 +547,8 @@ class Evaluator {
         if let srcUnit = sourceUnitName, let sourceUnit = UnitConverter.shared.unit(named: srcUnit),
            let targetUnit = UnitConverter.shared.unit(named: targetName) {
             let converted = UnitConverter.shared.convert(amount, from: sourceUnit, to: targetUnit)
-            return .number(converted, targetUnit)
+            let isCurrencyConversion = sourceUnit.category == .currency && targetUnit.category == .currency
+            return .number(converted, targetUnit, isCurrencyConversion)
         }
         
         return nil
@@ -641,8 +688,92 @@ class Evaluator {
             let tgt = try evaluateNode(target)
             return Value((pct.number / 100.0) * tgt.number, unit: tgt.unit)
             
+        case .percentageOff(let percent, let target):
+            // 10% off $100 = $100 - (10% of $100) = $90
+            let pct = try evaluateNode(percent)
+            let tgt = try evaluateNode(target)
+            let discount = (pct.number / 100.0) * tgt.number
+            return Value(tgt.number - discount, unit: tgt.unit)
+            
+        case .asPercentOf(let numerator, let denominator):
+            // $5 as a % of $10 = 50%
+            let num = try evaluateNode(numerator)
+            let denom = try evaluateNode(denominator)
+            guard denom.number != 0 else { return Value(.nan) }
+            return Value((num.number / denom.number) * 100.0, unit: nil)
+            
+        case .functionCall(let name, let arg):
+            let val = try evaluateNode(arg)
+            let result: Double
+            switch name.lowercased() {
+            case "sqrt":
+                result = sqrt(val.number)
+            case "sin":
+                result = sin(val.number) // Expects radians (degrees converted in parser)
+            case "cos":
+                result = cos(val.number)
+            case "tan":
+                result = tan(val.number)
+            case "ln":
+                result = log(val.number) // Natural log
+            case "log":
+                result = log10(val.number) // Base 10 log
+            case "abs":
+                result = abs(val.number)
+            case "floor":
+                result = floor(val.number)
+            case "ceil":
+                result = ceil(val.number)
+            case "round":
+                result = round(val.number)
+            default:
+                throw EvalError("Unknown function: \(name)")
+            }
+            return Value(result, unit: val.unit)
+            
+        case .functionCall2(let name, let arg1, let arg2):
+            let val1 = try evaluateNode(arg1)
+            let val2 = try evaluateNode(arg2)
+            let result: Double
+            switch name.lowercased() {
+            case "log":
+                // log base val1 of val2
+                result = log(val2.number) / log(val1.number)
+            default:
+                throw EvalError("Unknown function: \(name)")
+            }
+            return Value(result, unit: nil)
+            
         case .assignment(let name, let expr):
             let value = try evaluateNode(expr)
+            
+            // Special handling for CSS unit configuration
+            let lowerName = name.lowercased()
+            if let unit = value.unit, unit.category == .css {
+                switch lowerName {
+                case "em":
+                    // em = 14px sets the em base size
+                    if unit.name == "pixel" {
+                        UnitConverter.shared.emSize = value.number
+                        return value
+                    }
+                case "rem":
+                    // rem = 16px sets the rem base size
+                    if unit.name == "pixel" {
+                        UnitConverter.shared.remSize = value.number
+                        return value
+                    }
+                case "ppi":
+                    // ppi = 320px sets pixels per inch
+                    if unit.name == "pixel" {
+                        UnitConverter.shared.ppi = value.number
+                        return value
+                    }
+                default:
+                    break
+                }
+            }
+            
             variables[name] = value
             sectionValues.append(value)
             // Track currency order
@@ -670,7 +801,12 @@ class Evaluator {
             }
             
             let converted = UnitConverter.shared.convert(value.number, from: sourceUnit, to: targetUnit)
-            return Value(converted, unit: targetUnit)
+            var result = Value(converted, unit: targetUnit)
+            // Mark as currency conversion for visual indicator
+            if sourceUnit.category == .currency && targetUnit.category == .currency {
+                result.isCurrencyConversion = true
+            }
+            return result
         }
     }
     

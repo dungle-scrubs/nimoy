@@ -51,13 +51,18 @@ struct LineResult: Identifiable {
 }
 
 enum EvaluationResult: Equatable {
-    case number(Double, Unit?)
+    case number(Double, Unit?, Bool)  // value, unit, isCurrencyConversion
     case text(String)
     case error(String)
     
+    // Convenience initializer for backwards compatibility
+    static func number(_ value: Double, _ unit: Unit?) -> EvaluationResult {
+        return .number(value, unit, false)
+    }
+    
     var displayString: String {
         switch self {
-        case .number(let value, let unit):
+        case .number(let value, let unit, _):
             if let unit = unit {
                 return unit.format(value)
             }
@@ -75,5 +80,12 @@ enum EvaluationResult: Equatable {
         case .error(let msg):
             return "Error: \(msg)"
         }
+    }
+    
+    var isCurrencyConversion: Bool {
+        if case .number(_, _, let isConversion) = self {
+            return isConversion
+        }
+        return false
     }
 }

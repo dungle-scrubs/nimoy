@@ -9,6 +9,7 @@ enum UnitCategory: String, CaseIterable {
     case currency
     case area
     case volume
+    case css  // Design units: px, em, rem, pt
 }
 
 enum SymbolPosition {
@@ -56,6 +57,11 @@ class UnitConverter {
     private var units: [String: Unit] = [:]
     private var aliases: [String: String] = [:]
     
+    // Configurable CSS unit bases
+    var emSize: Double = 16.0  // 1em = 16px by default
+    var remSize: Double = 16.0 // 1rem = 16px by default  
+    var ppi: Double = 96.0     // Pixels per inch (96 for standard screens)
+    
     private init() {
         registerUnits()
     }
@@ -69,7 +75,7 @@ class UnitConverter {
         register(Unit(name: "mile", symbol: "mi", category: .length, factor: 1609.344), aliases: ["miles"])
         register(Unit(name: "yard", symbol: "yd", category: .length, factor: 0.9144), aliases: ["yards"])
         register(Unit(name: "foot", symbol: "ft", category: .length, factor: 0.3048), aliases: ["feet"])
-        register(Unit(name: "inch", symbol: "in", category: .length, factor: 0.0254), aliases: ["inches"])
+        register(Unit(name: "inch", symbol: "\"", category: .length, factor: 0.0254), aliases: ["inches", "in"])
         
         // Mass (base: kilogram)
         register(Unit(name: "kilogram", symbol: "kg", category: .mass, factor: 1.0), aliases: ["kilograms", "kilo", "kilos"])
@@ -136,6 +142,15 @@ class UnitConverter {
         register(Unit(name: "pint", symbol: "pt", category: .volume, factor: 0.473176), aliases: ["pints"])
         register(Unit(name: "cup", symbol: "cup", category: .volume, factor: 0.236588), aliases: ["cups"])
         register(Unit(name: "floz", symbol: "fl oz", category: .volume, factor: 0.0295735), aliases: ["fluidounce", "fluidounces"])
+        register(Unit(name: "tablespoon", symbol: "tbsp", category: .volume, factor: 0.0147868), aliases: ["tablespoons", "tbsp."])
+        register(Unit(name: "teaspoon", symbol: "tsp", category: .volume, factor: 0.00492892), aliases: ["teaspoons", "tsp."])
+        register(Unit(name: "cubicmeter", symbol: "m³", category: .volume, factor: 1000.0), aliases: ["cbm", "cubicmeters", "cubicmetre", "cubicmetres"])
+        
+        // CSS/Design units (base: pixel) - factors are placeholders, actual conversion uses dynamic values
+        register(Unit(name: "pixel", symbol: "px", category: .css, factor: 1.0), aliases: ["pixels"])
+        register(Unit(name: "em", symbol: "em", category: .css, factor: 16.0), aliases: ["ems"])
+        register(Unit(name: "rem", symbol: "rem", category: .css, factor: 16.0), aliases: ["rems"])
+        register(Unit(name: "point", symbol: "pt", category: .css, factor: 1.333), aliases: ["points"])
     }
     
     private func register(_ unit: Unit, aliases: [String] = []) {
@@ -194,8 +209,34 @@ class UnitConverter {
             // Fall back to static rates if API not loaded yet
         }
         
+        // CSS units use dynamic conversion factors
+        if source.category == .css {
+            return convertCSS(value, from: source, to: target)
+        }
+        
         let baseValue = value * source.toBase
         return baseValue * target.fromBase
+    }
+    
+    private func convertCSS(_ value: Double, from source: Unit, to target: Unit) -> Double {
+        // Convert source to pixels first
+        let pixels: Double
+        switch source.name {
+        case "pixel": pixels = value
+        case "em": pixels = value * emSize
+        case "rem": pixels = value * remSize
+        case "point": pixels = value * (ppi / 72.0)
+        default: pixels = value
+        }
+        
+        // Convert pixels to target
+        switch target.name {
+        case "pixel": return pixels
+        case "em": return pixels / emSize
+        case "rem": return pixels / remSize
+        case "point": return pixels / (ppi / 72.0)
+        default: return pixels
+        }
     }
     
     private func convertTemperature(_ value: Double, from source: Unit, to target: Unit) -> Double {

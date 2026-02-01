@@ -199,6 +199,18 @@ struct ResultText: View {
             Text("--")
                 .font(.system(size: 15, design: .monospaced))
                 .foregroundColor(.red)
+        } else if result.isCurrencyConversion {
+            // Currency conversion with pill indicator
+            Text(result.displayString)
+                .font(.system(size: 15, design: .monospaced))
+                .foregroundColor(theme.backgroundSwiftUI)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 2)
+                .background(
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(theme.resultSwiftUI)
+                )
+                .textSelection(.enabled)
         } else {
             Text(result.displayString)
                 .font(.system(size: 15, design: .monospaced))

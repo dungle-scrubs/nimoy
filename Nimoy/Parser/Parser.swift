@@ -8,6 +8,10 @@ indirect enum ASTNode: Equatable {
     case unaryMinus(ASTNode)
     case percentage(ASTNode)  // e.g., 15% as a standalone value
     case percentageOf(ASTNode, ASTNode)  // e.g., 15% of 200
+    case percentageOff(ASTNode, ASTNode) // e.g., 10% off $100 -> $90
+    case asPercentOf(ASTNode, ASTNode)   // e.g., $5 as a % of $10 -> 50%
+    case functionCall(String, ASTNode)   // e.g., sqrt(9), sin(30)
+    case functionCall2(String, ASTNode, ASTNode) // e.g., log(2, 10) - log base 2 of 10
     case assignment(String, ASTNode)
     case conversion(ASTNode, String)  // e.g., 5 km to miles
     case withUnit(ASTNode, String)  // e.g., 5 km
@@ -175,6 +179,13 @@ class Parser {
         
         // Check for percentage
         if consume(.percent) {
+            // Check for "X% off Y" (e.g., 10% off $100)
+            if case .off = currentToken {
+                advance()
+                if let target = parseExpression() {
+                    return .percentageOff(node, target)
+                }
+            }
             // Check for "X% of Y"
             if currentToken == .of {
                 advance()
@@ -183,6 +194,22 @@ class Parser {
                 }
             }
             node = .percentage(node)
+        }
+        
+        // Check for "X as a % of Y" pattern
+        if case .asA = currentToken {
+            advance()
+            // Skip optional "a" token (from "as a")
+            if case .identifier(let id) = currentToken, id == "a" {
+                advance()
+            }
+            // Expect % and then "of"
+            if consume(.percent), case .of = currentToken {
+                advance()
+                if let denominator = parseExpression() {
+                    return .asPercentOf(node, denominator)
+                }
+            }
         }
         
         // Check for unit
@@ -204,16 +231,25 @@ class Parser {
         return node
     }
     
-    // primary = number | currency | identifier | "(" expression ")"
+    // primary = number | currency | identifier | function | "(" expression ")"
     private func parsePrimary() -> ASTNode? {
         switch currentToken {
         case .number(let value):
             advance()
+            // Check for degree marker
+            if case .identifier(let id) = currentToken, id == "deg" {
+                advance()
+                return .number(value * .pi / 180.0) // Convert degrees to radians
+            }
             return .number(value)
             
         case .currency(let symbol, let value):
             advance()
             return .currency(symbol, value)
+            
+        case .function(let name):
+            advance()
+            return parseFunction(name)
             
         case .identifier(let name):
             advance()
@@ -228,5 +264,45 @@ class Parser {
         default:
             return nil
         }
+    }
+    
+    // Parse function call: sqrt(9), sin(30), log 2 (10), etc.
+    private func parseFunction(_ name: String) -> ASTNode? {
+        // Skip optional "of" after function name (e.g., "square root of 9")
+        if case .of = currentToken {
+            advance()
+        }
+        
+        // Check for log with base: "log 2 (10)" or "log2(10)"
+        if name == "log" {
+            // Check if next token is a number (the base)
+            if case .number(let base) = currentToken {
+                advance()
+                // Now parse the argument
+                if case .leftParen = currentToken {
+                    advance()
+                    if let arg = parseExpression() {
+                        _ = consume(.rightParen)
+                        return .functionCall2("log", .number(base), arg)
+                    }
+                } else if let arg = parsePrimary() {
+                    return .functionCall2("log", .number(base), arg)
+                }
+            }
+        }
+        
+        // Standard function call with parentheses or just a value
+        if case .leftParen = currentToken {
+            advance()
+            if let arg = parseExpression() {
+                _ = consume(.rightParen)
+                return .functionCall(name, arg)
+            }
+        } else if let arg = parsePrimary() {
+            // Function without parentheses: sqrt 9
+            return .functionCall(name, arg)
+        }
+        
+        return nil
     }
 }

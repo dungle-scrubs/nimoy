@@ -14,7 +14,10 @@ enum Token: Equatable {
     case equals
     case to  // for unit conversion: "5 km to miles"
     case of  // for "half of", "10% of"
+    case off // for "10% off $100"
+    case asA // for "$5 as a % of $10"
     case currency(String, Double) // $, €, £ with value
+    case function(String) // sqrt, sin, cos, tan, log
     case eof
 }
 
@@ -108,10 +111,15 @@ class Tokenizer {
             if char.isLetter {
                 let ident = readIdentifier().lowercased()
                 switch ident {
-                case "to", "in", "as":
+                case "to", "in":
                     tokens.append(.to)
                 case "of":
                     tokens.append(.of)
+                case "off":
+                    tokens.append(.off)
+                case "as":
+                    // Check for "as a" pattern - will be followed by "a"
+                    tokens.append(.asA)
                 case "plus", "and":
                     tokens.append(.plus)
                 case "minus", "subtract":
@@ -141,6 +149,23 @@ class Tokenizer {
                 case "triple":
                     tokens.append(.number(3))
                     tokens.append(.multiply)
+                // Math functions
+                case "sqrt", "sin", "cos", "tan", "log", "ln", "abs", "floor", "ceil", "round":
+                    tokens.append(.function(ident))
+                case "square":
+                    // Check if next word is "root"
+                    skipWhitespace()
+                    if currentChar?.lowercased() == "r" {
+                        let next = readIdentifier().lowercased()
+                        if next == "root" {
+                            tokens.append(.function("sqrt"))
+                        } else {
+                            tokens.append(.identifier("square"))
+                            tokens.append(.identifier(next))
+                        }
+                    } else {
+                        tokens.append(.identifier("square"))
+                    }
                 default:
                     tokens.append(.identifier(ident))
                 }
@@ -155,7 +180,7 @@ class Tokenizer {
             case "-":
                 tokens.append(.minus)
                 advance()
-            case "*":
+            case "*", "×":
                 tokens.append(.multiply)
                 advance()
             case "/":
@@ -175,6 +200,10 @@ class Tokenizer {
                 advance()
             case "=":
                 tokens.append(.equals)
+                advance()
+            case "°":
+                // Degree symbol - mark previous number as degrees
+                tokens.append(.identifier("deg"))
                 advance()
             default:
                 advance() // Skip unknown characters
