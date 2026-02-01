@@ -164,6 +164,19 @@ final class EvaluatorTests: XCTestCase {
         }
     }
     
+    func testStripMisspelledWord() {
+        // "pearsss" should be stripped like "pears"
+        let result = evaluator.evaluate("18 apples plus 49 pearsss")
+        XCTAssertEqual(result, .number(67, nil))
+    }
+    
+    func testSumAfterStrippedExpressions() {
+        _ = evaluator.evaluate("18 apples + 23")  // 41
+        _ = evaluator.evaluate("18 apples plus 49 pearsss")  // 67
+        let result = evaluator.evaluate("fruit = sum")
+        XCTAssertEqual(result, .number(108, nil))
+    }
+    
     // MARK: - Comments
     
     func testLineComment() {

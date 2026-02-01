@@ -13,7 +13,8 @@ struct NimoyApp: App {
                     appDelegate.appState = appState
                 }
         }
-        .windowStyle(.hiddenTitleBar)
+        // Don't use .hiddenTitleBar - it removes the titlebar entirely
+        // Instead, configure titlebar in WindowAccessor
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("New Page") {

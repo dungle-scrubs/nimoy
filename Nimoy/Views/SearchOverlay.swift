@@ -147,19 +147,17 @@ struct SearchTextField: NSViewRepresentable {
         textField.focusRingType = .none
         textField.stringValue = ""
         
+        // Focus on creation
+        DispatchQueue.main.async {
+            textField.window?.makeFirstResponder(textField)
+        }
+        
         return textField
     }
     
     func updateNSView(_ nsView: NSTextField, context: Context) {
         if nsView.stringValue != text {
             nsView.stringValue = text
-        }
-        
-        // Always try to focus when view updates
-        DispatchQueue.main.async {
-            if nsView.window?.firstResponder != nsView.currentEditor() {
-                nsView.window?.makeFirstResponder(nsView)
-            }
         }
     }
     
