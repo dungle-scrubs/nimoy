@@ -34,6 +34,11 @@ struct NimoyApp: App {
                 }
                 .keyboardShortcut("k", modifiers: .command)
                 
+                Button("Generate...") {
+                    appState.showGenerate = true
+                }
+                .keyboardShortcut("g", modifiers: .command)
+                
                 Divider()
                 
                 Button("Export...") {
@@ -74,6 +79,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 case "k":
                     DispatchQueue.main.async {
                         self.appState?.showActions = true
+                    }
+                    return nil
+                case "g":
+                    DispatchQueue.main.async {
+                        self.appState?.showGenerate = true
                     }
                     return nil
                 case "e":

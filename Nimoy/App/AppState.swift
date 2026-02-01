@@ -7,8 +7,10 @@ class AppState: ObservableObject {
     @Published var currentPageIndex: Int = 0
     @Published var showSearch: Bool = false { didSet { if showSearch { searchId = UUID() } } }
     @Published var showActions: Bool = false { didSet { if showActions { actionsId = UUID() } } }
+    @Published var showGenerate: Bool = false { didSet { if showGenerate { generateId = UUID() } } }
     @Published var searchId = UUID()
     @Published var actionsId = UUID()
+    @Published var generateId = UUID()
     
     private let storageURL: URL
     

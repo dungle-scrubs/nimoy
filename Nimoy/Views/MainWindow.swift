@@ -22,6 +22,16 @@ struct MainWindow: View {
                 ActionPalette()
                     .id(appState.actionsId)
             }
+            
+            if appState.showGenerate {
+                GenerateOverlay(isPresented: $appState.showGenerate) { generatedContent in
+                    // Insert generated content into current page
+                    if appState.currentPageIndex < appState.pages.count {
+                        appState.pages[appState.currentPageIndex].content = generatedContent
+                    }
+                }
+                .id(appState.generateId)
+            }
         }
         .frame(minWidth: 500, minHeight: 300)
         .toolbar(id: "main") {
