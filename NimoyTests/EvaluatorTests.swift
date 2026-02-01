@@ -139,6 +139,31 @@ final class EvaluatorTests: XCTestCase {
         XCTAssertEqual(result, .number(35, nil))
     }
     
+    // MARK: - Number with Unit (no space)
+    
+    func testNumberWithUnitNoSpace() {
+        let result = evaluator.evaluate("5000THB")
+        // Should parse as 5000 THB
+        XCTAssertNotNil(result)
+        if case .number(let value, let unit) = result {
+            XCTAssertEqual(value, 5000)
+            XCTAssertEqual(unit?.name, "thb")
+        } else {
+            XCTFail("Expected number with unit")
+        }
+    }
+    
+    func testNumberWithUnitNoSpaceInExpression() {
+        let result = evaluator.evaluate("100USD + 50USD")
+        // Should parse as 100 USD + 50 USD = 150 USD
+        XCTAssertNotNil(result)
+        if case .number(let value, _) = result {
+            XCTAssertEqual(value, 150)
+        } else {
+            XCTFail("Expected number result")
+        }
+    }
+    
     // MARK: - Comments
     
     func testLineComment() {

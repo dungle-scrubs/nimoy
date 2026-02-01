@@ -144,7 +144,8 @@ class SyntaxHighlighter {
     }
     
     private static func highlightExpression(_ text: String, in attributed: NSMutableAttributedString, startingAt offset: Int, font: NSFont) {
-        let pattern = #"(\$|€|£|¥|฿|₩|₹)?\d+\.?\d*|\b[a-zA-Z_][a-zA-Z0-9_]*\b|[+\-*/^%=()]"#
+        // Pattern to match: currency+number, number+unit (like 5000THB), number, word, operator
+        let pattern = #"(\$|€|£|¥|฿|₩|₹)\d+\.?\d*|\d+\.?\d*[a-zA-Z]+|\d+\.?\d*|\b[a-zA-Z_][a-zA-Z0-9_]*\b|[+\-*/^%=()]"#
         
         guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else { return }
         
@@ -159,7 +160,22 @@ class SyntaxHighlighter {
             let currencySymbols: Set<Character> = ["$", "€", "£", "¥", "฿", "₩", "₹"]
             
             if let first = matchedText.first, currencySymbols.contains(first) {
+                // Currency symbol + number (e.g., $100)
                 attributed.addAttribute(.foregroundColor, value: currencyColor, range: matchRange)
+            } else if matchedText.first?.isNumber == true && matchedText.contains(where: { $0.isLetter }) {
+                // Number followed by unit (e.g., 5000THB) - split and highlight separately
+                if let splitIndex = matchedText.firstIndex(where: { $0.isLetter }) {
+                    let numberPart = String(matchedText[..<splitIndex])
+                    let unitPart = String(matchedText[splitIndex...])
+                    
+                    let numberRange = NSRange(location: offset + match.range.location, length: numberPart.utf16.count)
+                    let unitRange = NSRange(location: offset + match.range.location + numberPart.utf16.count, length: unitPart.utf16.count)
+                    
+                    attributed.addAttribute(.foregroundColor, value: numberColor, range: numberRange)
+                    if units.contains(unitPart.lowercased()) {
+                        attributed.addAttribute(.foregroundColor, value: unitColor, range: unitRange)
+                    }
+                }
             } else if let _ = Double(matchedText) {
                 attributed.addAttribute(.foregroundColor, value: numberColor, range: matchRange)
             } else if keywords.contains(lowercased) {
