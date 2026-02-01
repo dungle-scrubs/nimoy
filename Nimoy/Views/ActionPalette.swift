@@ -11,12 +11,13 @@ struct AppAction: Identifiable {
 
 struct ActionPalette: View {
     @EnvironmentObject var appState: AppState
+    @ObservedObject private var themeManager = ThemeManager.shared
     @State private var searchText: String = ""
     @State private var selectedIndex: Int = 0
     @State private var eventMonitor: Any?
     
     var actions: [AppAction] {
-        [
+        var result: [AppAction] = [
             AppAction(name: "New Page", shortcut: "⌘N", icon: "plus") {
                 appState.createNewPage()
                 appState.showActions = false
@@ -38,6 +39,19 @@ struct ActionPalette: View {
                 appState.showActions = false
             },
         ]
+        
+        // Add theme options
+        for themeId in themeManager.themeIds {
+            let themeName = themeManager.availableThemes[themeId]?.name ?? themeId
+            let isCurrent = themeId == themeManager.currentThemeId
+            let displayName = isCurrent ? "Theme: \(themeName) ✓" : "Theme: \(themeName)"
+            result.append(AppAction(name: displayName, shortcut: nil, icon: "paintpalette") {
+                themeManager.setTheme(themeId)
+                appState.showActions = false
+            })
+        }
+        
+        return result
     }
     
     var filteredActions: [AppAction] {
@@ -48,6 +62,8 @@ struct ActionPalette: View {
     }
     
     var body: some View {
+        let theme = themeManager.currentTheme
+        
         ZStack {
             // Dimmed background
             Color.black.opacity(0.5)
@@ -61,22 +77,22 @@ struct ActionPalette: View {
                 // Search field
                 HStack {
                     Image(systemName: "command")
-                        .foregroundColor(.gray)
+                        .foregroundColor(theme.secondaryTextSwiftUI)
                     TextField("Search actions...", text: $searchText)
                         .textFieldStyle(.plain)
                         .font(.system(size: 16))
-                        .foregroundColor(.white)
+                        .foregroundColor(theme.textSwiftUI)
                 }
                 .padding(12)
-                .background(Color(white: 0.2))
+                .background(theme.selectionSwiftUI)
                 
                 Divider()
-                    .background(Color.gray.opacity(0.3))
+                    .background(theme.borderSwiftUI)
                 
                 // Actions list
                 VStack(spacing: 0) {
                     ForEach(Array(filteredActions.enumerated()), id: \.element.id) { index, action in
-                        ActionRow(action: action, isSelected: index == selectedIndex)
+                        ActionRow(action: action, isSelected: index == selectedIndex, theme: theme)
                             .onTapGesture {
                                 action.action()
                             }
@@ -84,7 +100,7 @@ struct ActionPalette: View {
                 }
             }
             .frame(width: 400)
-            .background(Color(white: 0.15))
+            .background(theme.overlayBackgroundSwiftUI)
             .cornerRadius(12)
             .shadow(color: .black.opacity(0.5), radius: 20)
             .onAppear {
@@ -149,27 +165,28 @@ struct ActionPalette: View {
 struct ActionRow: View {
     let action: AppAction
     let isSelected: Bool
+    let theme: Theme
     
     var body: some View {
         HStack {
             Image(systemName: action.icon)
                 .frame(width: 24)
-                .foregroundColor(.white.opacity(0.8))
+                .foregroundColor(theme.textSwiftUI.opacity(0.8))
             
             Text(action.name)
-                .foregroundColor(.white)
+                .foregroundColor(theme.textSwiftUI)
             
             Spacer()
             
             if let shortcut = action.shortcut {
                 Text(shortcut)
                     .font(.system(size: 12, design: .monospaced))
-                    .foregroundColor(.gray)
+                    .foregroundColor(theme.secondaryTextSwiftUI)
             }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(isSelected ? Color.white.opacity(0.1) : Color.clear)
+        .background(isSelected ? theme.selectionSwiftUI : Color.clear)
     }
 }
 

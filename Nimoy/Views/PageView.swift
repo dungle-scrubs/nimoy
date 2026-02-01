@@ -9,6 +9,7 @@ let titleBarHeight: CGFloat = 6
 struct PageView: View {
     @Binding var page: Page
     @StateObject private var viewModel: PageViewModel
+    @ObservedObject private var themeManager = ThemeManager.shared
     
     init(page: Binding<Page>) {
         self._page = page
@@ -24,7 +25,8 @@ struct PageView: View {
                         get: { viewModel.content },
                         set: { viewModel.content = $0 }
                     ),
-                    font: editorFont
+                    font: editorFont,
+                    theme: themeManager.currentTheme
                 )
                 .frame(width: geometry.size.width * 0.6)
                 
@@ -34,7 +36,7 @@ struct PageView: View {
                         HStack {
                             Spacer()
                             if let evalResult = result.result {
-                                ResultText(result: evalResult)
+                                ResultText(result: evalResult, theme: themeManager.currentTheme)
                             }
                         }
                         .frame(height: kLineHeight)
@@ -47,7 +49,7 @@ struct PageView: View {
             }
         }
         .padding(.top, titleBarHeight)
-        .background(Color(nsColor: NSColor(calibratedRed: 0.15, green: 0.15, blue: 0.17, alpha: 1.0)))
+        .background(themeManager.currentTheme.backgroundSwiftUI.ignoresSafeArea())
         .onReceive(viewModel.$results) { _ in
             var updatedPage = page
             updatedPage.updateContent(viewModel.content)
@@ -58,12 +60,17 @@ struct PageView: View {
                 viewModel.setContent(newValue)
             }
         }
+        .onAppear {
+            // Re-evaluate when view appears to fix initial load issues
+            viewModel.setContent(page.content)
+        }
     }
 }
 
 struct CalculatorEditor: NSViewRepresentable {
     @Binding var text: String
     var font: NSFont
+    var theme: Theme
     
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSTextView.scrollableTextView()
@@ -79,8 +86,8 @@ struct CalculatorEditor: NSViewRepresentable {
         textView.isAutomaticDashSubstitutionEnabled = false
         textView.isAutomaticTextReplacementEnabled = false
         textView.isAutomaticSpellingCorrectionEnabled = false
-        textView.backgroundColor = NSColor(calibratedRed: 0.15, green: 0.15, blue: 0.17, alpha: 1.0)
-        textView.insertionPointColor = .white
+        textView.backgroundColor = theme.backgroundColor
+        textView.insertionPointColor = theme.cursorColor
         textView.textContainerInset = NSSize(width: editorInset, height: editorInset - 6)
         
         // Set line height
@@ -91,7 +98,7 @@ struct CalculatorEditor: NSViewRepresentable {
         textView.typingAttributes = [
             .font: font,
             .paragraphStyle: paragraphStyle,
-            .foregroundColor: NSColor.white
+            .foregroundColor: theme.textColor
         ]
         
         textView.isVerticallyResizable = true
@@ -118,11 +125,31 @@ struct CalculatorEditor: NSViewRepresentable {
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         let textView = scrollView.documentView as! NSTextView
         
+        // Update coordinator's parent reference for theme changes
+        context.coordinator.parent = self
+        
+        // Update theme colors
+        textView.backgroundColor = theme.backgroundColor
+        textView.insertionPointColor = theme.cursorColor
+        
+        // Update typing attributes for new text
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.minimumLineHeight = kLineHeight
+        paragraphStyle.maximumLineHeight = kLineHeight
+        textView.typingAttributes = [
+            .font: font,
+            .paragraphStyle: paragraphStyle,
+            .foregroundColor: theme.textColor
+        ]
+        
         if textView.string != text {
             let selectedRanges = textView.selectedRanges
             textView.string = text
             context.coordinator.applyHighlighting(to: textView)
             textView.selectedRanges = selectedRanges
+        } else {
+            // Re-apply highlighting for theme changes
+            context.coordinator.applyHighlighting(to: textView)
         }
     }
     
@@ -151,7 +178,7 @@ struct CalculatorEditor: NSViewRepresentable {
             defer { isUpdating = false }
             
             let selectedRanges = textView.selectedRanges
-            let attributed = SyntaxHighlighter.highlight(textView.string, font: parent.font, lineHeight: kLineHeight)
+            let attributed = SyntaxHighlighter.highlight(textView.string, font: parent.font, lineHeight: kLineHeight, theme: parent.theme)
             
             textView.textStorage?.setAttributedString(attributed)
             textView.selectedRanges = selectedRanges
@@ -161,12 +188,13 @@ struct CalculatorEditor: NSViewRepresentable {
 
 struct ResultText: View {
     let result: EvaluationResult
+    let theme: Theme
     
     var body: some View {
         if case .text(let str) = result, str == "Loading..." {
             LoadingDots(interval: 0.5)
                 .font(.system(size: 15, design: .monospaced))
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.secondaryTextSwiftUI)
         } else if case .error(_) = result {
             Text("--")
                 .font(.system(size: 15, design: .monospaced))
@@ -182,9 +210,9 @@ struct ResultText: View {
     private var resultColor: Color {
         switch result {
         case .number:
-            return Color(nsColor: NSColor(calibratedRed: 0.6, green: 0.9, blue: 0.6, alpha: 1.0))
+            return theme.resultSwiftUI
         case .text:
-            return .secondary
+            return theme.secondaryTextSwiftUI
         case .error:
             return .red
         }
@@ -206,7 +234,6 @@ class PageViewModel: ObservableObject {
         }
     }
     
-    private let evaluator = Evaluator()
     private var debounceTask: Task<Void, Never>?
     private var priceCheckTimer: Timer?
     
@@ -214,6 +241,12 @@ class PageViewModel: ObservableObject {
         _content = content
         evaluateAll()
         startPriceCheckTimer()
+        
+        // Re-evaluate after prices have had time to load
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 500_000_000) // 500ms
+            evaluateAll()
+        }
     }
     
     deinit {
@@ -256,7 +289,7 @@ class PageViewModel: ObservableObject {
     }
     
     private func evaluateAll() {
-        evaluator.reset()
+        let evaluator = Evaluator()
         
         let lines = content.components(separatedBy: "\n")
         results = lines.enumerated().map { index, line in

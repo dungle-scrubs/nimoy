@@ -3,6 +3,7 @@ import AppKit
 
 struct SearchOverlay: View {
     @EnvironmentObject var appState: AppState
+    @ObservedObject private var themeManager = ThemeManager.shared
     @State private var searchText = ""
     @State private var selectedIndex = 0
     @FocusState private var isSearchFocused: Bool
@@ -13,6 +14,8 @@ struct SearchOverlay: View {
     }
     
     var body: some View {
+        let theme = themeManager.currentTheme
+        
         ZStack {
             // Backdrop
             Color.black.opacity(0.3)
@@ -26,19 +29,20 @@ struct SearchOverlay: View {
                 // Search field
                 HStack(spacing: 12) {
                     Image(systemName: "magnifyingglass")
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.secondaryTextSwiftUI)
                         .font(.system(size: 18))
                     
                     TextField("Search pages...", text: $searchText)
                         .textFieldStyle(.plain)
                         .font(.system(size: 18))
+                        .foregroundColor(theme.textSwiftUI)
                         .focused($isSearchFocused)
                         .onSubmit { selectCurrentPage() }
                     
                     if !searchText.isEmpty {
                         Button(action: { searchText = "" }) {
                             Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.secondary)
+                                .foregroundColor(theme.secondaryTextSwiftUI)
                         }
                         .buttonStyle(.plain)
                     }
@@ -47,6 +51,7 @@ struct SearchOverlay: View {
                 .padding(.vertical, 14)
                 
                 Divider()
+                    .background(theme.borderSwiftUI)
                 
                 // Results list
                 if !filteredPages.isEmpty {
@@ -57,7 +62,8 @@ struct SearchOverlay: View {
                                     SearchResultRow(
                                         page: page,
                                         searchQuery: searchText,
-                                        isSelected: index == selectedIndex
+                                        isSelected: index == selectedIndex,
+                                        theme: theme
                                     )
                                     .id(index)
                                     .onTapGesture {
@@ -76,7 +82,7 @@ struct SearchOverlay: View {
                 } else if !searchText.isEmpty {
                     VStack(spacing: 8) {
                         Text("No pages found")
-                            .foregroundColor(.secondary)
+                            .foregroundColor(theme.secondaryTextSwiftUI)
                         
                         Button("Create \"\(searchText)\"") {
                             createNewPage(titled: searchText)
@@ -86,7 +92,7 @@ struct SearchOverlay: View {
                     .padding(.vertical, 24)
                 }
             }
-            .background(.regularMaterial)
+            .background(theme.overlayBackgroundSwiftUI)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .shadow(color: .black.opacity(0.2), radius: 20, y: 10)
             .frame(width: 500)
@@ -167,22 +173,24 @@ struct SearchResultRow: View {
     let page: Page
     let searchQuery: String
     let isSelected: Bool
+    let theme: Theme
     
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "doc.text")
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.secondaryTextSwiftUI)
                 .font(.system(size: 16))
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(page.title.isEmpty ? "Untitled" : page.title)
                     .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(theme.textSwiftUI)
                     .lineLimit(1)
                 
                 if let preview = contentPreview {
                     Text(preview)
                         .font(.system(size: 12))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.secondaryTextSwiftUI)
                         .lineLimit(1)
                 }
             }
@@ -191,11 +199,11 @@ struct SearchResultRow: View {
             
             Text(formatDate(page.modifiedAt))
                 .font(.caption)
-                .foregroundColor(Color(nsColor: .tertiaryLabelColor))
+                .foregroundColor(theme.secondaryTextSwiftUI.opacity(0.7))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(isSelected ? Color.accentColor.opacity(0.1) : Color.clear)
+        .background(isSelected ? theme.selectionSwiftUI : Color.clear)
         .contentShape(Rectangle())
     }
     

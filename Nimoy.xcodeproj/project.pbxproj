@@ -24,6 +24,9 @@
 		A10000000000000000000013 /* SyntaxHighlighter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* SyntaxHighlighter.swift */; };
 		A10000000000000000000014 /* CryptoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* CryptoService.swift */; };
 		A10000000000000000000015 /* CurrencyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* CurrencyService.swift */; };
+		A10000000000000000000018 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000018 /* Theme.swift */; };
+		A10000000000000000000019 /* BuiltInThemes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* BuiltInThemes.swift */; };
+		A10000000000000000000021 /* ThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000021 /* ThemeManager.swift */; };
 		T10000000000000000000001 /* EvaluatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000001 /* EvaluatorTests.swift */; };
 		T10000000000000000000002 /* DebugTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000002 /* DebugTest.swift */; };
 /* End PBXBuildFile section */
@@ -56,6 +59,9 @@
 		A20000000000000000000013 /* SyntaxHighlighter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyntaxHighlighter.swift; sourceTree = "<group>"; };
 		A20000000000000000000014 /* CryptoService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoService.swift; sourceTree = "<group>"; };
 		A20000000000000000000015 /* CurrencyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyService.swift; sourceTree = "<group>"; };
+		A20000000000000000000018 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		A20000000000000000000019 /* BuiltInThemes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInThemes.swift; sourceTree = "<group>"; };
+		A20000000000000000000021 /* ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeManager.swift; sourceTree = "<group>"; };
 		A30000000000000000000001 /* Nimoy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Nimoy.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		T20000000000000000000001 /* EvaluatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvaluatorTests.swift; sourceTree = "<group>"; };
 		T20000000000000000000002 /* DebugTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugTest.swift; sourceTree = "<group>"; };
@@ -97,9 +103,20 @@
 				A50000000000000000000005 /* Parser */,
 				A50000000000000000000006 /* Views */,
 				A50000000000000000000007 /* Services */,
+				A50000000000000000000008 /* Theme */,
 				A20000000000000000000012 /* Assets.xcassets */,
 			);
 			path = Nimoy;
+			sourceTree = "<group>";
+		};
+		A50000000000000000000008 /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000018 /* Theme.swift */,
+				A20000000000000000000019 /* BuiltInThemes.swift */,
+				A20000000000000000000021 /* ThemeManager.swift */,
+			);
+			path = Theme;
 			sourceTree = "<group>";
 		};
 		A50000000000000000000003 /* App */ = {
@@ -286,6 +303,9 @@
 				A10000000000000000000013 /* SyntaxHighlighter.swift in Sources */,
 				A10000000000000000000014 /* CryptoService.swift in Sources */,
 				A10000000000000000000015 /* CurrencyService.swift in Sources */,
+				A10000000000000000000018 /* Theme.swift in Sources */,
+				A10000000000000000000019 /* BuiltInThemes.swift in Sources */,
+				A10000000000000000000021 /* ThemeManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
