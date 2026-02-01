@@ -7,7 +7,7 @@
 ## Planned
 
 ### UI/UX
-- [ ] Color themes (light, dark, solarized, etc.)
+- [x] Color themes (light, dark, solarized, etc.) - config at ~/.config/nimoy/theme.toml
 - [ ] Menu bar mode
 - [ ] Customizable fonts
 
