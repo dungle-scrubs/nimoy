@@ -244,8 +244,12 @@ class Evaluator {
         if lowercased.contains("=") {
             let parts = original.components(separatedBy: "=")
             if parts.count == 2 {
-                varName = parts[0].trimmingCharacters(in: .whitespaces).lowercased()
-                expr = parts[1].trimmingCharacters(in: .whitespaces).lowercased()
+                varName = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
+                    .filter { !$0.isASCII || $0.asciiValue! >= 32 } // Remove control chars
+                    .lowercased()
+                expr = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
+                    .filter { !$0.isASCII || $0.asciiValue! >= 32 } // Remove control chars
+                    .lowercased()
             }
         }
         // Try "var sum/average ..." syntax (space instead of =)
