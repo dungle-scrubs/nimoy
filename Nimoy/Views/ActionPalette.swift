@@ -12,9 +12,11 @@ struct AppAction: Identifiable {
 struct ActionPalette: View {
     @EnvironmentObject var appState: AppState
     @ObservedObject private var themeManager = ThemeManager.shared
+    @ObservedObject private var llmManager = LLMManager.shared
     @State private var searchText: String = ""
     @State private var selectedIndex: Int = 0
     @State private var eventMonitor: Any?
+    @FocusState private var isSearchFocused: Bool
     
     var actions: [AppAction] {
         var result: [AppAction] = [
@@ -51,6 +53,17 @@ struct ActionPalette: View {
             })
         }
         
+        // Add LLM provider options
+        for provider in LLMProviderType.allCases {
+            let isCurrent = provider == llmManager.providerType
+            let displayName = isCurrent ? "AI: \(provider.rawValue) ✓" : "AI: \(provider.rawValue)"
+            result.append(AppAction(name: displayName, shortcut: nil, icon: provider.icon) {
+                llmManager.providerType = provider
+                llmManager.saveSettings()
+                appState.showActions = false
+            })
+        }
+        
         return result
     }
     
@@ -82,6 +95,7 @@ struct ActionPalette: View {
                         .textFieldStyle(.plain)
                         .font(.system(size: 16))
                         .foregroundColor(theme.textSwiftUI)
+                        .focused($isSearchFocused)
                 }
                 .padding(12)
                 .background(theme.selectionSwiftUI)
@@ -106,6 +120,10 @@ struct ActionPalette: View {
             .onAppear {
                 selectedIndex = 0
                 setupEventMonitor()
+                // Focus the search field after a brief delay
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    isSearchFocused = true
+                }
             }
             .onDisappear {
                 removeEventMonitor()
