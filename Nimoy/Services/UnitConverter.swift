@@ -37,8 +37,11 @@ struct Unit: Equatable {
     func format(_ value: Double) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 2
-        formatter.minimumFractionDigits = category == .currency ? 2 : 0
+        
+        // Smart decimal places for small values (crypto)
+        let decimals = smartDecimalPlaces(for: value, isCurrency: category == .currency)
+        formatter.maximumFractionDigits = decimals
+        formatter.minimumFractionDigits = (category == .currency && value >= 0.01) ? 2 : 0
         
         let formatted = formatter.string(from: NSNumber(value: value)) ?? String(value)
         
@@ -48,6 +51,32 @@ struct Unit: Equatable {
         case .after:
             return "\(formatted) \(symbol)"
         }
+    }
+    
+    /// Calculate appropriate decimal places based on value magnitude
+    private func smartDecimalPlaces(for value: Double, isCurrency: Bool) -> Int {
+        let absValue = abs(value)
+        
+        // For values >= 1, use standard 2 decimals
+        if absValue >= 1 {
+            return 2
+        }
+        
+        // For zero
+        if absValue == 0 {
+            return isCurrency ? 2 : 0
+        }
+        
+        // For small values, find first significant digit position
+        // e.g., 0.00000123 → need 8 decimals to show "0.00000123"
+        let log10Value = log10(absValue)
+        let firstSigDigitPos = Int(floor(-log10Value))  // e.g., 0.001 → 3, 0.00001 → 5
+        
+        // Show first significant digit + 2-3 more for context
+        // Cap at 10 decimals max
+        let decimals = min(firstSigDigitPos + 3, 10)
+        
+        return max(decimals, 2)  // At least 2 for currency
     }
 }
 

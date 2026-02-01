@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		P10000000000000000000001 /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = P20000000000000000000001 /* MLXLLM */; };
+		P10000000000000000000002 /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = P20000000000000000000002 /* MLXLMCommon */; };
 		A10000000000000000000001 /* NimoyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* NimoyApp.swift */; };
 		A10000000000000000000002 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* AppState.swift */; };
 		A10000000000000000000003 /* Page.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* Page.swift */; };
@@ -29,6 +31,7 @@
 		A10000000000000000000024 /* GenerateOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000024 /* GenerateOverlay.swift */; };
 		A10000000000000000000025 /* LLMProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000025 /* LLMProvider.swift */; };
 		A10000000000000000000026 /* MLXProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000026 /* MLXProvider.swift */; };
+		A10000000000000000000027 /* MLXNativeProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000027 /* MLXNativeProvider.swift */; };
 		A10000000000000000000018 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000018 /* Theme.swift */; };
 		A10000000000000000000019 /* BuiltInThemes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* BuiltInThemes.swift */; };
 		A10000000000000000000021 /* ThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000021 /* ThemeManager.swift */; };
@@ -70,6 +73,7 @@
 		A20000000000000000000024 /* GenerateOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateOverlay.swift; sourceTree = "<group>"; };
 		A20000000000000000000025 /* LLMProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMProvider.swift; sourceTree = "<group>"; };
 		A20000000000000000000026 /* MLXProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLXProvider.swift; sourceTree = "<group>"; };
+		A20000000000000000000027 /* MLXNativeProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLXNativeProvider.swift; sourceTree = "<group>"; };
 		A20000000000000000000018 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		A20000000000000000000019 /* BuiltInThemes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInThemes.swift; sourceTree = "<group>"; };
 		A20000000000000000000021 /* ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeManager.swift; sourceTree = "<group>"; };
@@ -85,6 +89,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				P10000000000000000000001 /* MLXLLM in Frameworks */,
+				P10000000000000000000002 /* MLXLMCommon in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -183,6 +189,7 @@
 				A20000000000000000000023 /* NimoyTemplates.swift */,
 				A20000000000000000000025 /* LLMProvider.swift */,
 				A20000000000000000000026 /* MLXProvider.swift */,
+				A20000000000000000000027 /* MLXNativeProvider.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -222,6 +229,10 @@
 			dependencies = (
 			);
 			name = Nimoy;
+			packageProductDependencies = (
+				P20000000000000000000001 /* MLXLLM */,
+				P20000000000000000000002 /* MLXLMCommon */,
+			);
 			productName = Nimoy;
 			productReference = A30000000000000000000001 /* Nimoy.app */;
 			productType = "com.apple.product-type.application";
@@ -272,6 +283,9 @@
 				Base,
 			);
 			mainGroup = A50000000000000000000001;
+			packageReferences = (
+				P30000000000000000000001 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */,
+			);
 			productRefGroup = A50000000000000000000099 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -326,6 +340,7 @@
 				A10000000000000000000024 /* GenerateOverlay.swift in Sources */,
 				A10000000000000000000025 /* LLMProvider.swift in Sources */,
 				A10000000000000000000026 /* MLXProvider.swift in Sources */,
+				A10000000000000000000027 /* MLXNativeProvider.swift in Sources */,
 				A10000000000000000000018 /* Theme.swift in Sources */,
 				A10000000000000000000019 /* BuiltInThemes.swift in Sources */,
 				A10000000000000000000021 /* ThemeManager.swift in Sources */,
@@ -586,6 +601,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		P30000000000000000000001 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ml-explore/mlx-swift-lm";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.30.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		P20000000000000000000001 /* MLXLLM */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = P30000000000000000000001 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
+			productName = MLXLLM;
+		};
+		P20000000000000000000002 /* MLXLMCommon */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = P30000000000000000000001 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
+			productName = MLXLMCommon;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A90000000000000000000001 /* Project object */;
 }

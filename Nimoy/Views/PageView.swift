@@ -654,23 +654,35 @@ class PageViewModel: ObservableObject {
     
     init(content: String) {
         _content = content
+        
         evaluateAll()
         startPriceCheckTimer()
-        
-        // Re-evaluate after prices have had time to load
-        Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 500_000_000) // 500ms
-            evaluateAll()
-        }
+        startCryptoPriceListener()
     }
     
     deinit {
         priceCheckTimer?.invalidate()
+        if let observer = cryptoPriceObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
     }
     
     func setContent(_ newContent: String) {
         _content = newContent
         evaluateAll()
+    }
+    
+    private var cryptoPriceObserver: NSObjectProtocol?
+    
+    private func startCryptoPriceListener() {
+        // Re-evaluate when crypto prices are fetched
+        cryptoPriceObserver = NotificationCenter.default.addObserver(
+            forName: .cryptoPriceUpdated,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.evaluateAll()
+        }
     }
     
     private func debounceEvaluate() {

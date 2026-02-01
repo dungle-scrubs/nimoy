@@ -190,12 +190,13 @@ class Evaluator {
         if words.count == 2 && CryptoPriceCache.shared.isCrypto(words[1]) {
             if let amount = Double(words[0]) {
                 let crypto = words[1]
-                if CryptoPriceCache.shared.isLoading() {
-                    return .text("Loading...")
-                }
                 if let usdValue = CryptoPriceCache.shared.convertToUSD(amount: amount, crypto: crypto) {
                     let usdUnit = UnitConverter.shared.unit(named: "usd")
                     return .number(usdValue, usdUnit)
+                }
+                // Check if we're fetching this price
+                if CryptoPriceCache.shared.isFetching(crypto) {
+                    return .text("Loading...")
                 }
                 return .error("Price unavailable")
             }
@@ -382,10 +383,6 @@ class Evaluator {
     }
     
     private func sumInCrypto(_ crypto: String) -> EvaluationResult {
-        if CryptoPriceCache.shared.isLoading() {
-            return .text("Loading crypto prices...")
-        }
-        
         // First convert everything to USD
         guard let usdUnit = UnitConverter.shared.unit(named: "usd") else {
             return .error("USD unit not found")
@@ -402,9 +399,13 @@ class Evaluator {
             }
         }
         
-        // Convert USD to crypto
+        // Convert USD to crypto (triggers fetch if not cached)
         guard let cryptoAmount = CryptoPriceCache.shared.convertFromUSD(usdAmount: totalUSD, crypto: crypto) else {
-            return .error("\(crypto.uppercased()) price unavailable - try again")
+            // Check if we're fetching this price
+            if CryptoPriceCache.shared.isFetching(crypto) {
+                return .text("Loading...")
+            }
+            return .error("\(crypto.uppercased()) price unavailable")
         }
         
         // Create a crypto unit for display
@@ -445,10 +446,6 @@ class Evaluator {
     }
     
     private func averageInCrypto(_ crypto: String) -> EvaluationResult {
-        if CryptoPriceCache.shared.isLoading() {
-            return .text("Loading crypto prices...")
-        }
-        
         guard !sectionValues.isEmpty else {
             let symbol = CryptoPriceCache.shared.getSymbol(crypto)
             let cryptoUnit = Unit(name: crypto.uppercased(), symbol: symbol, category: .currency, factor: 1.0)
@@ -473,9 +470,12 @@ class Evaluator {
         
         let avgUSD = totalUSD / Double(sectionValues.count)
         
-        // Convert USD to crypto
+        // Convert USD to crypto (triggers fetch if not cached)
         guard let cryptoAmount = CryptoPriceCache.shared.convertFromUSD(usdAmount: avgUSD, crypto: crypto) else {
-            return .error("Crypto price unavailable")
+            if CryptoPriceCache.shared.isFetching(crypto) {
+                return .text("Loading...")
+            }
+            return .error("\(crypto.uppercased()) price unavailable")
         }
         
         // Create a crypto unit for display
@@ -588,11 +588,15 @@ class Evaluator {
         
         guard let amount = amount else { return nil }
         
-        // Handle crypto conversions
-        if CryptoPriceCache.shared.isCrypto(targetName) || (sourceUnitName != nil && CryptoPriceCache.shared.isCrypto(sourceUnitName!)) {
-            if CryptoPriceCache.shared.isLoading() {
-                return .text("Loading...")
-            }
+        // Handle crypto conversions - check if any involved crypto is being fetched
+        let targetIsCrypto = CryptoPriceCache.shared.isCrypto(targetName)
+        let sourceIsCrypto = sourceUnitName != nil && CryptoPriceCache.shared.isCrypto(sourceUnitName!)
+        
+        if targetIsCrypto && CryptoPriceCache.shared.isFetching(targetName) {
+            return .text("Loading...")
+        }
+        if sourceIsCrypto, let src = sourceUnitName, CryptoPriceCache.shared.isFetching(src) {
+            return .text("Loading...")
         }
         
         if CryptoPriceCache.shared.isCrypto(targetName) {
