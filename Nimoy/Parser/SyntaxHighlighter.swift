@@ -19,10 +19,11 @@ class SyntaxHighlighter {
         let attributed = NSMutableAttributedString(string: text)
         let fullRange = NSRange(location: 0, length: text.utf16.count)
         
-        // Paragraph style for line height
+        // Paragraph style for line height and wrap indent
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.minimumLineHeight = lineHeight
         paragraphStyle.maximumLineHeight = lineHeight
+        paragraphStyle.headIndent = 20  // Indent wrapped lines
         
         // Default attributes
         attributed.addAttribute(.font, value: font, range: fullRange)
