@@ -404,7 +404,7 @@ class Evaluator {
         
         // Convert USD to crypto
         guard let cryptoAmount = CryptoPriceCache.shared.convertFromUSD(usdAmount: totalUSD, crypto: crypto) else {
-            return .error("Crypto price unavailable")
+            return .error("\(crypto.uppercased()) price unavailable - try again")
         }
         
         // Create a crypto unit for display
