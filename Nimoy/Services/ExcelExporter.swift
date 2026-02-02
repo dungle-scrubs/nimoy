@@ -44,19 +44,14 @@ class ExcelExporter {
                 currentRow: rowNum
             )
 
-            // Track variable assignments for formula references
+            // Track variable assignments for formula references (only for actual assignments, not references)
             if let eqIndex = trimmed.firstIndex(of: "=") {
                 let varName = String(trimmed[..<eqIndex]).trimmingCharacters(in: .whitespaces).lowercased()
                 if !varName.isEmpty, !varName.contains(" ") {
                     variableRows[varName] = rowNum
                 }
-            } else {
-                // Single word might be a variable reference
-                let words = trimmed.lowercased().components(separatedBy: .whitespaces)
-                if let firstWord = words.first, !firstWord.isEmpty {
-                    variableRows[firstWord] = rowNum
-                }
             }
+            // Don't add variable references to the map - they should point to original assignments
 
             if let row {
                 rows.append(row)
