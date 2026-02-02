@@ -5,18 +5,15 @@ import Foundation
 /// XLSX is a zip archive containing XML files
 class ExcelExporter {
     struct ExportRow {
-        let text: String
-        let assignedValue: String // Could be number, formula, or empty
-        let calculatedResult: String
-        let rate: String // Exchange rate if applicable
-        let isFormula: Bool
+        let description: String
+        let value: Double? // Numeric value (for formulas)
+        let valueFormula: String? // Excel formula if applicable
+        let unit: String // Unit type (THB, USD, etc.)
+        let resultValue: Double? // Calculated result
+        let resultUnit: String // Result unit
     }
 
     /// Export a Nimoy document to Excel
-    /// - Parameters:
-    ///   - content: The Nimoy document content
-    ///   - results: The evaluation results for each line
-    /// - Returns: URL to the temporary xlsx file, or nil on failure
     static func export(content: String, results: [LineResult]) -> URL? {
         let rows = buildRows(content: content, results: results)
         return generateXLSX(rows: rows)
@@ -26,7 +23,7 @@ class ExcelExporter {
     private static func buildRows(content: String, results: [LineResult]) -> [ExportRow] {
         let lines = content.components(separatedBy: "\n")
         var rows: [ExportRow] = []
-        var variableRows: [String: Int] = [:] // Track which row each variable is on
+        var variableRows: [String: Int] = [:] // Track which row each variable is on (1-indexed for Excel)
 
         for (index, line) in lines.enumerated() {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
@@ -40,8 +37,9 @@ class ExcelExporter {
             let rowNum = rows.count + 2 // Excel rows are 1-indexed, +1 for header
 
             // Parse the line
-            let (text, assignedValue, isFormula) = parseLine(
+            let row = parseLine(
                 line: trimmed,
+                result: result,
                 variableRows: variableRows,
                 currentRow: rowNum
             )
@@ -54,75 +52,122 @@ class ExcelExporter {
                 }
             } else {
                 // Single word might be a variable reference
-                let word = trimmed.lowercased().components(separatedBy: " ").first ?? ""
-                if !word.isEmpty {
-                    variableRows[word] = rowNum
+                let words = trimmed.lowercased().components(separatedBy: .whitespaces)
+                if let firstWord = words.first, !firstWord.isEmpty {
+                    variableRows[firstWord] = rowNum
                 }
             }
 
-            // Get calculated result and rate
-            let (calcResult, rate) = formatResult(result)
-
-            rows.append(ExportRow(
-                text: text,
-                assignedValue: assignedValue,
-                calculatedResult: calcResult,
-                rate: rate,
-                isFormula: isFormula
-            ))
+            if let row {
+                rows.append(row)
+            }
         }
 
         return rows
     }
 
-    /// Parse a line into text and assigned value
+    /// Parse a line into an export row
     private static func parseLine(
         line: String,
+        result: EvaluationResult?,
         variableRows: [String: Int],
         currentRow: Int
-    ) -> (text: String, assignedValue: String, isFormula: Bool) {
+    ) -> ExportRow? {
+        var description = ""
+        var value: Double?
+        var valueFormula: String?
+        var unit = ""
+        var resultValue: Double?
+        var resultUnit = ""
+
+        // Extract result info
+        if let result {
+            switch result {
+            case let .number(val, unitObj, _, _):
+                resultValue = val
+                resultUnit = unitObj?.symbol ?? ""
+            case .text, .error:
+                break
+            }
+        }
+
         // Check for assignment
         if let eqIndex = line.firstIndex(of: "=") {
-            let text = String(line[..<eqIndex]).trimmingCharacters(in: .whitespaces)
+            description = String(line[..<eqIndex]).trimmingCharacters(in: .whitespaces)
             let valueStr = String(line[line.index(after: eqIndex)...]).trimmingCharacters(in: .whitespaces)
 
             // Check if it's an aggregate function
             let lowerValue = valueStr.lowercased()
 
             if lowerValue.hasPrefix("sum") {
-                let formula = buildAggregateFormula("SUM", variableRows: variableRows, currentRow: currentRow)
-                return (text, formula, true)
+                valueFormula = buildAggregateFormula("SUM", variableRows: variableRows, currentRow: currentRow)
+                // Extract unit from "sum in THB" or just "sum"
+                if lowerValue.contains(" in ") {
+                    let parts = valueStr.components(separatedBy: " in ")
+                    if parts.count > 1 {
+                        unit = parts[1].trimmingCharacters(in: .whitespaces)
+                    }
+                }
             } else if lowerValue.hasPrefix("average") || lowerValue.hasPrefix("avg") {
-                let formula = buildAggregateFormula("AVERAGE", variableRows: variableRows, currentRow: currentRow)
-                return (text, formula, true)
+                valueFormula = buildAggregateFormula("AVERAGE", variableRows: variableRows, currentRow: currentRow)
             } else if lowerValue.hasPrefix("count") {
-                let formula = buildAggregateFormula("COUNT", variableRows: variableRows, currentRow: currentRow)
-                return (text, formula, true)
+                valueFormula = buildAggregateFormula("COUNT", variableRows: variableRows, currentRow: currentRow)
             } else if lowerValue.hasPrefix("min") {
-                let formula = buildAggregateFormula("MIN", variableRows: variableRows, currentRow: currentRow)
-                return (text, formula, true)
+                valueFormula = buildAggregateFormula("MIN", variableRows: variableRows, currentRow: currentRow)
             } else if lowerValue.hasPrefix("max") {
-                let formula = buildAggregateFormula("MAX", variableRows: variableRows, currentRow: currentRow)
-                return (text, formula, true)
-            }
+                valueFormula = buildAggregateFormula("MAX", variableRows: variableRows, currentRow: currentRow)
+            } else {
+                // Parse value and unit from assignment like "500 THB"
+                let parsed = parseValueAndUnit(valueStr)
+                value = parsed.value
+                unit = parsed.unit
 
-            // Check if value references other variables
-            let formula = buildCellFormula(valueStr, variableRows: variableRows)
-            if formula != valueStr {
-                return (text, formula, true)
+                // Check if value references other variables
+                if value == nil {
+                    let formula = buildCellFormula(valueStr, variableRows: variableRows)
+                    if formula != valueStr {
+                        valueFormula = formula
+                    }
+                }
             }
+        } else {
+            // No assignment - might be a variable reference like "rent" or "cosmetics"
+            description = line
 
-            // Plain value
-            return (text, valueStr, false)
+            // Check if it matches a known variable
+            let lowerLine = line.lowercased().components(separatedBy: .whitespaces).first ?? ""
+            if let refRow = variableRows[lowerLine] {
+                valueFormula = "=B\(refRow)"
+            }
         }
 
-        // No assignment - just text (variable reference)
-        let lowerLine = line.lowercased()
-        if let row = variableRows[lowerLine.components(separatedBy: " ").first ?? ""] {
-            return (line, "=B\(row)", true)
+        return ExportRow(
+            description: description,
+            value: value,
+            valueFormula: valueFormula,
+            unit: unit,
+            resultValue: resultValue,
+            resultUnit: resultUnit
+        )
+    }
+
+    /// Parse a value string like "500 THB" into value and unit
+    private static func parseValueAndUnit(_ str: String) -> (value: Double?, unit: String) {
+        let parts = str.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+
+        if parts.isEmpty {
+            return (nil, "")
         }
 
-        return (line, "", false)
+        // Try to parse first part as number
+        let numStr = parts[0].replacingOccurrences(of: ",", with: "")
+        if let num = Double(numStr) {
+            let unit = parts.count > 1 ? parts[1...].joined(separator: " ") : ""
+            return (num, unit)
+        }
+
+        // Not a number, might be a variable reference or expression
+        return (nil, "")
     }
 
     /// Build an aggregate formula (SUM, AVERAGE, etc.)
@@ -171,51 +216,8 @@ class ExcelExporter {
         return expression
     }
 
-    /// Format the evaluation result
-    private static func formatResult(_ result: EvaluationResult?) -> (value: String, rate: String) {
-        guard let result else {
-            return ("", "")
-        }
-
-        switch result {
-        case let .number(value, unit, isCurrencyConversion, _):
-            let formatted: String = if let unit {
-                unit.format(value)
-            } else {
-                formatNumber(value)
-            }
-
-            // If it's a currency conversion, try to get the rate
-            var rate = ""
-            if isCurrencyConversion {
-                // The rate info would need to come from the conversion
-                // For now, we'll leave it as the unit symbol
-                if let unit {
-                    rate = unit.symbol
-                }
-            }
-
-            return (formatted, rate)
-
-        case let .text(str):
-            return (str, "")
-
-        case let .error(msg):
-            return ("Error: \(msg)", "")
-        }
-    }
-
-    /// Format a number for display
-    private static func formatNumber(_ value: Double) -> String {
-        if value == floor(value), abs(value) < 1e10 {
-            return String(format: "%.0f", value)
-        }
-        return String(format: "%.2f", value)
-    }
-
     // MARK: - XLSX Generation
 
-    /// Generate an XLSX file from rows
     private static func generateXLSX(rows: [ExportRow]) -> URL? {
         let tempDir = FileManager.default.temporaryDirectory
         let xlsxDir = tempDir.appendingPathComponent(UUID().uuidString)
@@ -368,9 +370,10 @@ class ExcelExporter {
         cellsXML += """
             <row r="1">
                 <c r="A1" t="inlineStr" s="1"><is><t>Description</t></is></c>
-                <c r="B1" t="inlineStr" s="1"><is><t>Value/Formula</t></is></c>
-                <c r="C1" t="inlineStr" s="1"><is><t>Result</t></is></c>
-                <c r="D1" t="inlineStr" s="1"><is><t>Rate/Unit</t></is></c>
+                <c r="B1" t="inlineStr" s="1"><is><t>Value</t></is></c>
+                <c r="C1" t="inlineStr" s="1"><is><t>Unit</t></is></c>
+                <c r="D1" t="inlineStr" s="1"><is><t>Result</t></is></c>
+                <c r="E1" t="inlineStr" s="1"><is><t>Result Unit</t></is></c>
             </row>
         """
 
@@ -379,37 +382,39 @@ class ExcelExporter {
             let rowNum = index + 2
             cellsXML += "<row r=\"\(rowNum)\">"
 
-            // Column A - Text
-            cellsXML += "<c r=\"A\(rowNum)\" t=\"inlineStr\"><is><t>\(escapeXML(row.text))</t></is></c>"
+            // Column A - Description (text)
+            cellsXML += "<c r=\"A\(rowNum)\" t=\"inlineStr\"><is><t>\(escapeXML(row.description))</t></is></c>"
 
-            // Column B - Assigned Value (formula or value)
-            if row.isFormula {
-                cellsXML += "<c r=\"B\(rowNum)\"><f>\(escapeXML(String(row.assignedValue.dropFirst())))</f></c>"
-            } else if let numValue = Double(row.assignedValue.replacingOccurrences(of: ",", with: "")) {
-                cellsXML += "<c r=\"B\(rowNum)\"><v>\(numValue)</v></c>"
-            } else if !row.assignedValue.isEmpty {
-                cellsXML += "<c r=\"B\(rowNum)\" t=\"inlineStr\"><is><t>\(escapeXML(row.assignedValue))</t></is></c>"
+            // Column B - Value (number or formula)
+            if let formula = row.valueFormula {
+                // Remove the leading = for the formula element
+                let formulaContent = formula.hasPrefix("=") ? String(formula.dropFirst()) : formula
+                cellsXML += "<c r=\"B\(rowNum)\"><f>\(escapeXML(formulaContent))</f></c>"
+            } else if let value = row.value {
+                cellsXML += "<c r=\"B\(rowNum)\"><v>\(value)</v></c>"
             } else {
                 cellsXML += "<c r=\"B\(rowNum)\"/>"
             }
 
-            // Column C - Calculated Result
-            let resultValue = row.calculatedResult
-                .replacingOccurrences(of: ",", with: "")
-                .components(separatedBy: " ").first ?? ""
-            if let numValue = Double(resultValue) {
-                cellsXML += "<c r=\"C\(rowNum)\"><v>\(numValue)</v></c>"
-            } else if !row.calculatedResult.isEmpty {
-                cellsXML += "<c r=\"C\(rowNum)\" t=\"inlineStr\"><is><t>\(escapeXML(row.calculatedResult))</t></is></c>"
+            // Column C - Unit (text)
+            if !row.unit.isEmpty {
+                cellsXML += "<c r=\"C\(rowNum)\" t=\"inlineStr\"><is><t>\(escapeXML(row.unit))</t></is></c>"
             } else {
                 cellsXML += "<c r=\"C\(rowNum)\"/>"
             }
 
-            // Column D - Rate/Unit
-            if !row.rate.isEmpty {
-                cellsXML += "<c r=\"D\(rowNum)\" t=\"inlineStr\"><is><t>\(escapeXML(row.rate))</t></is></c>"
+            // Column D - Result (number)
+            if let resultValue = row.resultValue {
+                cellsXML += "<c r=\"D\(rowNum)\"><v>\(resultValue)</v></c>"
             } else {
                 cellsXML += "<c r=\"D\(rowNum)\"/>"
+            }
+
+            // Column E - Result Unit (text)
+            if !row.resultUnit.isEmpty {
+                cellsXML += "<c r=\"E\(rowNum)\" t=\"inlineStr\"><is><t>\(escapeXML(row.resultUnit))</t></is></c>"
+            } else {
+                cellsXML += "<c r=\"E\(rowNum)\"/>"
             }
 
             cellsXML += "</row>"
@@ -419,10 +424,11 @@ class ExcelExporter {
         <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
         <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
             <cols>
-                <col min="1" max="1" width="30" customWidth="1"/>
-                <col min="2" max="2" width="20" customWidth="1"/>
-                <col min="3" max="3" width="20" customWidth="1"/>
+                <col min="1" max="1" width="25" customWidth="1"/>
+                <col min="2" max="2" width="15" customWidth="1"/>
+                <col min="3" max="3" width="10" customWidth="1"/>
                 <col min="4" max="4" width="15" customWidth="1"/>
+                <col min="5" max="5" width="12" customWidth="1"/>
             </cols>
             <sheetData>
                 \(cellsXML)
@@ -443,7 +449,6 @@ class ExcelExporter {
     // MARK: - Zip
 
     private static func zipDirectory(_ sourceDir: URL, to destFile: URL) throws {
-        // Use NSFileCoordinator and Archive utility
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/zip")
         process.arguments = ["-r", "-q", destFile.path, "."]
