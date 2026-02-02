@@ -578,7 +578,7 @@ class ResultsNSView: NSView {
 
             let needsWarning = shouldHaveValue && result == nil
 
-            // Draw warning icon for lines without values (next to text on left)
+            // Draw orange dashes for lines without values
             if needsWarning {
                 let safeCharIndex = min(charIndex, max(0, text.count - 1))
                 if safeCharIndex >= 0, !text.isEmpty {
@@ -586,18 +586,18 @@ class ResultsNSView: NSView {
                     let lineRect = layoutManager.lineFragmentRect(forGlyphAt: glyphIndex, effectiveRange: nil)
                     let yPos = lineRect.origin.y + textView.textContainerInset.height + 3
 
-                    // Draw warning icon on the right side
-                    let warningAttrs: [NSAttributedString.Key: Any] = [
-                        .font: NSFont.systemFont(ofSize: 11),
-                        .foregroundColor: NSColor.systemOrange,
+                    // Draw orange dashes on the right side
+                    let dashAttrs: [NSAttributedString.Key: Any] = [
+                        .font: NSFont.monospacedSystemFont(ofSize: 15, weight: .regular),
+                        .foregroundColor: NSColor.systemOrange.withAlphaComponent(0.6),
                     ]
-                    let warningRect = NSRect(
-                        x: bounds.width - editorInset - 20,
-                        y: yPos + 2,
-                        width: 20,
+                    let dashRect = NSRect(
+                        x: bounds.width - editorInset - 30,
+                        y: yPos,
+                        width: 30,
                         height: lineRect.height
                     )
-                    ("⚠" as NSString).draw(in: warningRect, withAttributes: warningAttrs)
+                    ("---" as NSString).draw(in: dashRect, withAttributes: dashAttrs)
                 }
                 charIndex += line.count + 1
                 continue
