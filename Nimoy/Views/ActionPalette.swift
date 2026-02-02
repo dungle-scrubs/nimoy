@@ -1,5 +1,5 @@
-import SwiftUI
 import AppKit
+import SwiftUI
 
 struct AppAction: Identifiable {
     let id = UUID()
@@ -17,7 +17,7 @@ struct ActionPalette: View {
     @State private var selectedIndex: Int = 0
     @State private var eventMonitor: Any?
     @FocusState private var isSearchFocused: Bool
-    
+
     var actions: [AppAction] {
         var result: [AppAction] = [
             AppAction(name: "New Page", shortcut: "⌘N", icon: "plus") {
@@ -28,9 +28,13 @@ struct ActionPalette: View {
                 appState.showActions = false
                 appState.showSearch = true
             },
-            AppAction(name: "Export to File", shortcut: "⌘E", icon: "square.and.arrow.up") {
+            AppAction(name: "Export to Text", shortcut: "⌘E", icon: "doc.text") {
                 appState.showActions = false
                 appState.exportCurrentPage()
+            },
+            AppAction(name: "Export to Excel", shortcut: "⌘⇧E", icon: "tablecells") {
+                appState.showActions = false
+                appState.exportToExcel()
             },
             AppAction(name: "Copy to Clipboard", shortcut: "⌘⇧C", icon: "doc.on.doc") {
                 appState.copyCurrentPageToClipboard()
@@ -41,7 +45,7 @@ struct ActionPalette: View {
                 appState.showActions = false
             },
         ]
-        
+
         // Add theme options
         for themeId in themeManager.themeIds {
             let themeName = themeManager.availableThemes[themeId]?.name ?? themeId
@@ -52,7 +56,7 @@ struct ActionPalette: View {
                 appState.showActions = false
             })
         }
-        
+
         // Add LLM provider options
         for provider in LLMProviderType.allCases {
             let isCurrent = provider == llmManager.providerType
@@ -63,20 +67,20 @@ struct ActionPalette: View {
                 appState.showActions = false
             })
         }
-        
+
         return result
     }
-    
+
     var filteredActions: [AppAction] {
         if searchText.isEmpty {
             return actions
         }
         return actions.filter { $0.name.lowercased().contains(searchText.lowercased()) }
     }
-    
+
     var body: some View {
         let theme = themeManager.currentTheme
-        
+
         ZStack {
             // Dimmed background
             Color.black.opacity(0.5)
@@ -84,7 +88,7 @@ struct ActionPalette: View {
                 .onTapGesture {
                     appState.showActions = false
                 }
-            
+
             // Action palette
             VStack(spacing: 0) {
                 // Search field
@@ -99,10 +103,10 @@ struct ActionPalette: View {
                 }
                 .padding(12)
                 .background(theme.selectionSwiftUI)
-                
+
                 Divider()
                     .background(theme.borderSwiftUI)
-                
+
                 // Actions list
                 VStack(spacing: 0) {
                     ForEach(Array(filteredActions.enumerated()), id: \.element.id) { index, action in
@@ -130,7 +134,7 @@ struct ActionPalette: View {
             }
         }
     }
-    
+
     private func setupEventMonitor() {
         eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [self] event in
             switch event.keyCode {
@@ -143,7 +147,7 @@ struct ActionPalette: View {
                 DispatchQueue.main.async {
                     if filteredActions.isEmpty { return }
                     if selectedIndex >= filteredActions.count - 1 {
-                        selectedIndex = 0  // Wrap to top
+                        selectedIndex = 0 // Wrap to top
                     } else {
                         selectedIndex += 1
                     }
@@ -153,7 +157,7 @@ struct ActionPalette: View {
                 DispatchQueue.main.async {
                     if filteredActions.isEmpty { return }
                     if selectedIndex <= 0 {
-                        selectedIndex = filteredActions.count - 1  // Wrap to bottom
+                        selectedIndex = filteredActions.count - 1 // Wrap to bottom
                     } else {
                         selectedIndex -= 1
                     }
@@ -171,7 +175,7 @@ struct ActionPalette: View {
             }
         }
     }
-    
+
     private func removeEventMonitor() {
         if let monitor = eventMonitor {
             NSEvent.removeMonitor(monitor)
@@ -184,18 +188,18 @@ struct ActionRow: View {
     let action: AppAction
     let isSelected: Bool
     let theme: Theme
-    
+
     var body: some View {
         HStack {
             Image(systemName: action.icon)
                 .frame(width: 24)
                 .foregroundColor(theme.textSwiftUI.opacity(0.8))
-            
+
             Text(action.name)
                 .foregroundColor(theme.textSwiftUI)
-            
+
             Spacer()
-            
+
             if let shortcut = action.shortcut {
                 Text(shortcut)
                     .font(.system(size: 12, design: .monospaced))
@@ -207,5 +211,3 @@ struct ActionRow: View {
         .background(isSelected ? theme.selectionSwiftUI : Color.clear)
     }
 }
-
-

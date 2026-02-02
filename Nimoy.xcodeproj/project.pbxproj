@@ -32,6 +32,7 @@
 		A10000000000000000000025 /* LLMProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000025 /* LLMProvider.swift */; };
 		A10000000000000000000026 /* MLXProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000026 /* MLXProvider.swift */; };
 		A10000000000000000000027 /* MLXNativeProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000027 /* MLXNativeProvider.swift */; };
+		A10000000000000000000028 /* ExcelExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000028 /* ExcelExporter.swift */; };
 		A10000000000000000000018 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000018 /* Theme.swift */; };
 		A10000000000000000000019 /* BuiltInThemes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* BuiltInThemes.swift */; };
 		A10000000000000000000021 /* ThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000021 /* ThemeManager.swift */; };
@@ -74,6 +75,7 @@
 		A20000000000000000000025 /* LLMProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMProvider.swift; sourceTree = "<group>"; };
 		A20000000000000000000026 /* MLXProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLXProvider.swift; sourceTree = "<group>"; };
 		A20000000000000000000027 /* MLXNativeProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLXNativeProvider.swift; sourceTree = "<group>"; };
+		A20000000000000000000028 /* ExcelExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExcelExporter.swift; sourceTree = "<group>"; };
 		A20000000000000000000018 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		A20000000000000000000019 /* BuiltInThemes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInThemes.swift; sourceTree = "<group>"; };
 		A20000000000000000000021 /* ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeManager.swift; sourceTree = "<group>"; };
@@ -190,6 +192,7 @@
 				A20000000000000000000025 /* LLMProvider.swift */,
 				A20000000000000000000026 /* MLXProvider.swift */,
 				A20000000000000000000027 /* MLXNativeProvider.swift */,
+				A20000000000000000000028 /* ExcelExporter.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -341,6 +344,7 @@
 				A10000000000000000000025 /* LLMProvider.swift in Sources */,
 				A10000000000000000000026 /* MLXProvider.swift in Sources */,
 				A10000000000000000000027 /* MLXNativeProvider.swift in Sources */,
+				A10000000000000000000028 /* ExcelExporter.swift in Sources */,
 				A10000000000000000000018 /* Theme.swift in Sources */,
 				A10000000000000000000019 /* BuiltInThemes.swift in Sources */,
 				A10000000000000000000021 /* ThemeManager.swift in Sources */,
