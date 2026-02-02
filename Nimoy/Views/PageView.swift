@@ -688,9 +688,9 @@ class ResultsNSView: NSView {
                 let textSize = (displayString as NSString).size(withAttributes: attributes)
                 let pillRect = NSRect(
                     x: rect.maxX - textSize.width - 16,
-                    y: yPos + 3,
+                    y: yPos + 5,
                     width: textSize.width + 16,
-                    height: kLineHeight - 6
+                    height: kLineHeight - 10
                 )
                 let pillPath = NSBezierPath(roundedRect: pillRect, xRadius: 4, yRadius: 4)
                 theme.resultColor.setFill()

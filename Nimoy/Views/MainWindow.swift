@@ -75,10 +75,10 @@ struct WindowAccessor: NSViewRepresentable {
             window.isMovableByWindowBackground = true
             window.titlebarSeparatorStyle = .none
 
-            // Reduce corner radius (default is ~10, we want ~5)
+            // Reduce corner radius (default is ~10, we want smaller)
             if let contentView = window.contentView {
                 contentView.wantsLayer = true
-                contentView.layer?.cornerRadius = 5
+                contentView.layer?.cornerRadius = 3
                 contentView.layer?.masksToBounds = true
             }
 
