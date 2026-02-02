@@ -686,18 +686,32 @@ class ResultsNSView: NSView {
             // Draw pill background for currency conversions
             if result.isCurrencyConversion {
                 let textSize = (displayString as NSString).size(withAttributes: attributes)
+                let pillPadding: CGFloat = 6
                 let pillRect = NSRect(
-                    x: rect.maxX - textSize.width - 16,
-                    y: yPos + 5,
-                    width: textSize.width + 16,
-                    height: kLineHeight - 10
+                    x: rect.maxX - textSize.width - pillPadding * 2,
+                    y: yPos + 3,
+                    width: textSize.width + pillPadding * 2,
+                    height: kLineHeight - 4
                 )
                 let pillPath = NSBezierPath(roundedRect: pillRect, xRadius: 4, yRadius: 4)
                 theme.resultColor.setFill()
                 pillPath.fill()
-            }
 
-            (displayString as NSString).draw(in: rect, withAttributes: attributes)
+                // Draw text centered in pill
+                let textRect = NSRect(
+                    x: pillRect.minX + pillPadding,
+                    y: yPos + 2,
+                    width: textSize.width,
+                    height: lineRect.height
+                )
+                let centeredAttrs: [NSAttributedString.Key: Any] = [
+                    .font: font,
+                    .foregroundColor: textColor,
+                ]
+                (displayString as NSString).draw(in: textRect, withAttributes: centeredAttrs)
+            } else {
+                (displayString as NSString).draw(in: rect, withAttributes: attributes)
+            }
 
             charIndex += line.count + 1
         }

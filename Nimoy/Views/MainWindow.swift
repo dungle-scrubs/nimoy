@@ -75,11 +75,19 @@ struct WindowAccessor: NSViewRepresentable {
             window.isMovableByWindowBackground = true
             window.titlebarSeparatorStyle = .none
 
-            // Reduce corner radius (default is ~10, we want smaller)
+            // Sharper corners - use smaller corner curve
+            window.styleMask.remove(.titled)
+            window.styleMask.insert(.titled) // Re-add to keep traffic lights
+
             if let contentView = window.contentView {
                 contentView.wantsLayer = true
-                contentView.layer?.cornerRadius = 3
+                contentView.layer?.cornerRadius = 0
                 contentView.layer?.masksToBounds = true
+            }
+
+            // Try to reduce corner radius at window level
+            if #available(macOS 11.0, *) {
+                window.toolbarStyle = .unifiedCompact
             }
 
             // Set window appearance based on theme brightness
