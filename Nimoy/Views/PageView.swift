@@ -368,6 +368,7 @@ struct SyncedEditorView: NSViewRepresentable {
 
         context.coordinator.applyHighlighting(to: textView)
         context.coordinator.updateLayout()
+        context.coordinator.setupFrameObserver()
 
         DispatchQueue.main.async {
             textView.window?.makeFirstResponder(textView)
@@ -427,9 +428,29 @@ struct SyncedEditorView: NSViewRepresentable {
         weak var containerView: NSView?
         weak var scrollView: NSScrollView?
         private var isUpdating = false
+        private var frameObserver: NSObjectProtocol?
 
         init(_ parent: SyncedEditorView) {
             self.parent = parent
+        }
+
+        func setupFrameObserver() {
+            guard let scrollView else { return }
+            scrollView.postsFrameChangedNotifications = true
+            frameObserver = NotificationCenter.default.addObserver(
+                forName: NSView.frameDidChangeNotification,
+                object: scrollView,
+                queue: .main
+            ) { [weak self] _ in
+                self?.updateLayout()
+                self?.resultsView?.needsDisplay = true
+            }
+        }
+
+        deinit {
+            if let observer = frameObserver {
+                NotificationCenter.default.removeObserver(observer)
+            }
         }
 
         func textDidChange(_ notification: Notification) {
