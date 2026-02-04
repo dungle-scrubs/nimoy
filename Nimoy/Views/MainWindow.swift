@@ -1,17 +1,34 @@
 import AppKit
 import SwiftUI
 
-struct MainWindow: View {
+/// Pure SwiftUI content - window is managed by AppDelegate
+struct MainWindowContent: View {
     @EnvironmentObject var appState: AppState
     @ObservedObject private var themeManager = ThemeManager.shared
 
     var body: some View {
-        ZStack {
-            // Background that extends under titlebar
+        ZStack(alignment: .top) {
+            // Background extends to edges
             themeManager.currentTheme.backgroundSwiftUI
                 .ignoresSafeArea()
 
             PageCarousel()
+
+            // Titlebar buttons
+            HStack {
+                // Drawer toggle (right of traffic lights)
+                DrawerToggleButton()
+                    .padding(.leading, 78) // Clear traffic lights
+
+                Spacer()
+
+                // Right-side toolbar buttons
+                ContentToolbarButtons(appState: appState)
+                    .padding(.trailing, 12)
+            }
+            .padding(.top, 2)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+            .ignoresSafeArea()
 
             if appState.showSearch {
                 SearchOverlay()
@@ -25,7 +42,6 @@ struct MainWindow: View {
 
             if appState.showGenerate {
                 GenerateOverlay(isPresented: $appState.showGenerate) { generatedContent in
-                    // Insert generated content into current page
                     if appState.currentPageIndex < appState.pages.count {
                         appState.pages[appState.currentPageIndex].content = generatedContent
                     }
@@ -34,82 +50,18 @@ struct MainWindow: View {
             }
         }
         .frame(minWidth: 500, minHeight: 300)
-        .toolbar(id: "main") {
-            ToolbarItem(id: "spacer", placement: .automatic) {
-                Spacer()
-            }
-            ToolbarItem(id: "add", placement: .automatic) {
-                Button(action: { appState.createNewPage() }) {
-                    Image(systemName: "plus")
-                }
-            }
-            ToolbarItem(id: "search", placement: .automatic) {
-                Button(action: { appState.showSearch = true }) {
-                    Image(systemName: "magnifyingglass")
-                }
-            }
-            ToolbarItem(id: "export", placement: .automatic) {
-                Button(action: { appState.exportCurrentPage() }) {
-                    Image(systemName: "square.and.arrow.up")
-                }
-            }
-        }
-        .toolbarRole(.editor)
-        .background(WindowAccessor(appState: appState, theme: themeManager.currentTheme))
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea()
     }
 }
 
-struct WindowAccessor: NSViewRepresentable {
-    let appState: AppState
-    let theme: Theme
+/// Keep for backwards compatibility if needed
+struct MainWindow: View {
+    @EnvironmentObject var appState: AppState
 
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        DispatchQueue.main.async {
-            guard let window = view.window else { return }
-
-            // Configure window for transparent titlebar
-            window.titlebarAppearsTransparent = true
-            window.titleVisibility = .hidden
-            window.styleMask.insert(.fullSizeContentView)
-            window.isMovableByWindowBackground = true
-            window.titlebarSeparatorStyle = .none
-
-            // Set window appearance based on theme brightness
-            window.appearance = windowAppearance(for: theme)
-
-            // Set window background color
-            window.backgroundColor = theme.backgroundColor
-
-            // Ensure traffic light buttons are visible
-            window.standardWindowButton(.closeButton)?.isHidden = false
-            window.standardWindowButton(.miniaturizeButton)?.isHidden = false
-            window.standardWindowButton(.zoomButton)?.isHidden = false
-        }
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        // Update window background and appearance when theme changes
-        DispatchQueue.main.async {
-            guard let window = nsView.window else { return }
-            window.appearance = windowAppearance(for: theme)
-            window.backgroundColor = theme.backgroundColor
-        }
-    }
-
-    private func windowAppearance(for theme: Theme) -> NSAppearance? {
-        // Determine if theme is light or dark based on background luminance
-        let bgColor = theme.backgroundColor
-        guard let rgb = bgColor.usingColorSpace(.sRGB) else {
-            return NSAppearance(named: .darkAqua)
-        }
-
-        // Calculate relative luminance
-        let luminance = 0.299 * rgb.redComponent + 0.587 * rgb.greenComponent + 0.114 * rgb.blueComponent
-
-        // If luminance > 0.5, it's a light theme
-        return NSAppearance(named: luminance > 0.5 ? .aqua : .darkAqua)
+    var body: some View {
+        MainWindowContent()
+            .environmentObject(appState)
     }
 }
 
@@ -180,5 +132,56 @@ struct TitlebarButton: View {
         .frame(width: 24, height: 24)
         .background(theme.buttonHoverSwiftUI.opacity(isHovered ? 1 : 0))
         .cornerRadius(5)
+    }
+}
+
+struct DrawerToggleButton: View {
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @State private var isHovered = false
+
+    var body: some View {
+        Image(systemName: "sidebar.left")
+            .font(.system(size: 13, weight: .medium))
+            .foregroundColor(themeManager.currentTheme.textSwiftUI.opacity(isHovered ? 0.9 : 0.5))
+            .frame(width: 28, height: 28)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                // TODO: Toggle drawer
+            }
+            .onHover { hovering in
+                isHovered = hovering
+            }
+    }
+}
+
+struct ContentToolbarButtons: View {
+    @ObservedObject var appState: AppState
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @State private var hoveredButton: String?
+
+    var body: some View {
+        HStack(spacing: 8) {
+            toolbarButton(icon: "plus", id: "add") {
+                appState.createNewPage()
+            }
+            toolbarButton(icon: "magnifyingglass", id: "search") {
+                appState.showSearch = true
+            }
+            toolbarButton(icon: "square.and.arrow.up", id: "export") {
+                appState.exportCurrentPage()
+            }
+        }
+    }
+
+    private func toolbarButton(icon: String, id: String, action: @escaping () -> Void) -> some View {
+        Image(systemName: icon)
+            .font(.system(size: 13, weight: .medium))
+            .foregroundColor(themeManager.currentTheme.textSwiftUI.opacity(hoveredButton == id ? 0.9 : 0.5))
+            .frame(width: 28, height: 28)
+            .contentShape(Rectangle())
+            .onTapGesture(perform: action)
+            .onHover { isHovered in
+                hoveredButton = isHovered ? id : nil
+            }
     }
 }
