@@ -11,31 +11,7 @@ struct Sidebar: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header
-            HStack {
-                Text("Pages")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(theme.textSwiftUI.opacity(0.5))
-                    .textCase(.uppercase)
-
-                Spacer()
-
-                Button(action: { appState.createNewPage() }) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(theme.textSwiftUI.opacity(0.5))
-                }
-                .buttonStyle(.plain)
-                .help("New Page")
-            }
-            .padding(.horizontal, 12)
-            .padding(.top, 12)
-            .padding(.bottom, 8)
-
-            Divider()
-                .background(theme.textSwiftUI.opacity(0.1))
-
-            // Page list
+            // Page list (header is now in titlebar)
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 2) {
                     ForEach(appState.pages) { page in

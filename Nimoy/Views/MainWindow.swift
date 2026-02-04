@@ -6,30 +6,61 @@ struct MainWindowContent: View {
     @EnvironmentObject var appState: AppState
     @ObservedObject private var themeManager = ThemeManager.shared
 
+    private let sidebarWidth: CGFloat = 220
+
     var body: some View {
-        ZStack(alignment: .top) {
-            // Background extends to edges
+        ZStack(alignment: .topLeading) {
+            // Background
             themeManager.currentTheme.backgroundSwiftUI
                 .ignoresSafeArea()
 
-            PageCarousel()
+            // Content with sidebar
+            HStack(spacing: 0) {
+                if appState.showSidebar {
+                    Sidebar()
+                        .environmentObject(appState)
+                        .frame(width: sidebarWidth)
+                        .transition(.move(edge: .leading))
+                }
 
-            // Titlebar buttons
+                PageCarousel()
+                    .frame(maxWidth: .infinity)
+            }
+            .padding(.top, 38)
+
+            // LEFT side: plus button + drawer button + full-width divider
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 8) {
+                    Spacer()
+                    if appState.showSidebar {
+                        SidebarPlusButton()
+                            .environmentObject(appState)
+                            .transition(.move(edge: .leading).combined(with: .opacity))
+                    }
+                    DrawerToggleButton()
+                        .environmentObject(appState)
+                }
+                .padding(.trailing, 12)
+
+                if appState.showSidebar {
+                    Divider()
+                        .padding(.trailing, 12)
+                        .transition(.opacity)
+                }
+            }
+            .frame(width: appState.showSidebar ? sidebarWidth : 78 + 40)
+            .padding(.top, 2)
+            .animation(.easeInOut(duration: 0.25), value: appState.showSidebar)
+
+            // RIGHT side: toolbar buttons
             HStack {
-                // Drawer toggle (right of traffic lights)
-                DrawerToggleButton()
-                    .padding(.leading, 78) // Clear traffic lights
-
                 Spacer()
-
-                // Right-side toolbar buttons
                 ContentToolbarButtons(appState: appState)
                     .padding(.trailing, 12)
             }
-            .padding(.top, 2)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-            .ignoresSafeArea()
+            .padding(.top, 4)
 
+            // Overlays
             if appState.showSearch {
                 SearchOverlay()
                     .id(appState.searchId)
@@ -55,7 +86,6 @@ struct MainWindowContent: View {
     }
 }
 
-/// Keep for backwards compatibility if needed
 struct MainWindow: View {
     @EnvironmentObject var appState: AppState
 
@@ -65,92 +95,45 @@ struct MainWindow: View {
     }
 }
 
-struct TitlebarButtonsToolbar: View {
-    @ObservedObject var appState: AppState
-    @ObservedObject private var themeManager = ThemeManager.shared
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Button(action: { appState.createNewPage() }) {
-                Image(systemName: "plus")
-            }
-            Button(action: { appState.showSearch = true }) {
-                Image(systemName: "magnifyingglass")
-            }
-            Button(action: { appState.exportCurrentPage() }) {
-                Image(systemName: "square.and.arrow.up")
-            }
-        }
-    }
-}
-
-struct TitlebarButtonsView: View {
-    @ObservedObject var appState: AppState
-    @ObservedObject private var themeManager = ThemeManager.shared
-    @State private var hovered: String? = nil
-
-    var body: some View {
-        HStack(spacing: 8) {
-            TitlebarButton(icon: "plus", isHovered: hovered == "new", theme: themeManager.currentTheme) {
-                appState.createNewPage()
-            }
-            .onHover { hovered = $0 ? "new" : nil }
-
-            TitlebarButton(icon: "magnifyingglass", isHovered: hovered == "search", theme: themeManager.currentTheme) {
-                appState.showSearch = true
-            }
-            .onHover { hovered = $0 ? "search" : nil }
-
-            TitlebarButton(
-                icon: "square.and.arrow.up",
-                isHovered: hovered == "export",
-                theme: themeManager.currentTheme
-            ) {
-                appState.exportCurrentPage()
-            }
-            .onHover { hovered = $0 ? "export" : nil }
-        }
-        .padding(.horizontal, 4)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(themeManager.currentTheme.backgroundSwiftUI)
-    }
-}
-
-struct TitlebarButton: View {
-    let icon: String
-    let isHovered: Bool
-    let theme: Theme
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: icon)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(theme.textSwiftUI.opacity(isHovered ? 0.9 : 0.6))
-        }
-        .buttonStyle(.plain)
-        .frame(width: 24, height: 24)
-        .background(theme.buttonHoverSwiftUI.opacity(isHovered ? 1 : 0))
-        .cornerRadius(5)
-    }
-}
-
-struct DrawerToggleButton: View {
+struct SidebarPlusButton: View {
+    @EnvironmentObject var appState: AppState
     @ObservedObject private var themeManager = ThemeManager.shared
     @State private var isHovered = false
 
     var body: some View {
-        Image(systemName: "sidebar.left")
-            .font(.system(size: 13, weight: .medium))
-            .foregroundColor(themeManager.currentTheme.textSwiftUI.opacity(isHovered ? 0.9 : 0.5))
-            .frame(width: 28, height: 28)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                // TODO: Toggle drawer
+        Button {
+            appState.createNewPage()
+        } label: {
+            Image(systemName: "plus")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(themeManager.currentTheme.textSwiftUI.opacity(isHovered ? 0.9 : 0.5))
+                .frame(width: 28, height: 28)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
+    }
+}
+
+struct DrawerToggleButton: View {
+    @EnvironmentObject var appState: AppState
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @State private var isHovered = false
+
+    var body: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                appState.showSidebar.toggle()
             }
-            .onHover { hovering in
-                isHovered = hovering
-            }
+        } label: {
+            Image(systemName: "sidebar.left")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(themeManager.currentTheme.textSwiftUI.opacity(isHovered ? 0.9 : 0.5))
+                .frame(width: 28, height: 28)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
     }
 }
 

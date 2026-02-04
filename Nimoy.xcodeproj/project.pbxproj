@@ -16,6 +16,7 @@
 		A10000000000000000000005 /* Parser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000005 /* Parser.swift */; };
 		A10000000000000000000006 /* Evaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* Evaluator.swift */; };
 		A10000000000000000000007 /* MainWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000007 /* MainWindow.swift */; };
+		A10000000000000000000020 /* Sidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000020 /* Sidebar.swift */; };
 		A10000000000000000000008 /* PageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* PageView.swift */; };
 		A10000000000000000000009 /* PageCarousel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* PageCarousel.swift */; };
 		A10000000000000000000010 /* SearchOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* SearchOverlay.swift */; };
@@ -59,6 +60,7 @@
 		A20000000000000000000005 /* Parser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Parser.swift; sourceTree = "<group>"; };
 		A20000000000000000000006 /* Evaluator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Evaluator.swift; sourceTree = "<group>"; };
 		A20000000000000000000007 /* MainWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindow.swift; sourceTree = "<group>"; };
+		A20000000000000000000020 /* Sidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sidebar.swift; sourceTree = "<group>"; };
 		A20000000000000000000008 /* PageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageView.swift; sourceTree = "<group>"; };
 		A20000000000000000000009 /* PageCarousel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageCarousel.swift; sourceTree = "<group>"; };
 		A20000000000000000000010 /* SearchOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchOverlay.swift; sourceTree = "<group>"; };
@@ -171,6 +173,7 @@
 			isa = PBXGroup;
 			children = (
 				A20000000000000000000007 /* MainWindow.swift */,
+				A20000000000000000000020 /* Sidebar.swift */,
 				A20000000000000000000008 /* PageView.swift */,
 				A20000000000000000000009 /* PageCarousel.swift */,
 				A20000000000000000000010 /* SearchOverlay.swift */,
@@ -329,6 +332,7 @@
 				A10000000000000000000005 /* Parser.swift in Sources */,
 				A10000000000000000000006 /* Evaluator.swift in Sources */,
 				A10000000000000000000007 /* MainWindow.swift in Sources */,
+				A10000000000000000000020 /* Sidebar.swift in Sources */,
 				A10000000000000000000008 /* PageView.swift in Sources */,
 				A10000000000000000000009 /* PageCarousel.swift in Sources */,
 				A10000000000000000000010 /* SearchOverlay.swift in Sources */,

@@ -20,6 +20,8 @@ class AppState: ObservableObject {
         didSet { if showGenerate { generateId = UUID() } }
     }
 
+    @Published var showSidebar: Bool = false
+
     @Published var searchId = UUID()
     @Published var actionsId = UUID()
     @Published var generateId = UUID()
