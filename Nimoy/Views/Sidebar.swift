@@ -38,7 +38,6 @@ struct Sidebar: View {
                 .padding(.vertical, 8)
             }
         }
-        .background(theme.backgroundSwiftUI.opacity(0.5))
         .contentShape(Rectangle())
     }
 }
@@ -54,10 +53,6 @@ struct SidebarRow: View {
     var body: some View {
         Button(action: onSelect) {
             HStack(spacing: 8) {
-                Image(systemName: "doc.text")
-                    .font(.system(size: 12))
-                    .foregroundColor(theme.textSwiftUI.opacity(0.4))
-
                 VStack(alignment: .leading, spacing: 2) {
                     Text(page.title)
                         .font(.system(size: 13))
@@ -73,9 +68,9 @@ struct SidebarRow: View {
 
                 if isHovered {
                     Button(action: onDelete) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 9, weight: .medium))
-                            .foregroundColor(theme.textSwiftUI.opacity(0.4))
+                        Image(systemName: "trash")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.red.opacity(0.7))
                     }
                     .buttonStyle(.plain)
                     .help("Delete Page")

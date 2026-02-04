@@ -14,19 +14,12 @@ struct MainWindowContent: View {
             themeManager.currentTheme.backgroundSwiftUI
                 .ignoresSafeArea()
 
-            // Content with sidebar
-            HStack(spacing: 0) {
-                if appState.showSidebar {
-                    Sidebar()
-                        .environmentObject(appState)
-                        .frame(width: sidebarWidth)
-                        .transition(.move(edge: .leading))
-                }
-
-                PageCarousel()
-                    .frame(maxWidth: .infinity)
-            }
-            .padding(.top, 38)
+            // Main content (PageCarousel only)
+            PageCarousel()
+                .frame(maxWidth: .infinity)
+                .padding(.leading, appState.showSidebar ? sidebarWidth : 0)
+                .padding(.top, 38)
+                .animation(.easeInOut(duration: 0.25), value: appState.showSidebar)
 
             // LEFT side: plus button + drawer button + full-width divider
             VStack(alignment: .leading, spacing: 4) {
@@ -48,9 +41,10 @@ struct MainWindowContent: View {
                         .transition(.opacity)
                 }
             }
-            .frame(width: appState.showSidebar ? sidebarWidth : 78 + 40)
+            .frame(width: appState.showSidebar ? sidebarWidth : 78 + 40, height: 36, alignment: .top)
             .padding(.top, 2)
             .animation(.easeInOut(duration: 0.25), value: appState.showSidebar)
+            .zIndex(1)
 
             // RIGHT side: toolbar buttons
             HStack {
@@ -58,7 +52,9 @@ struct MainWindowContent: View {
                 ContentToolbarButtons(appState: appState)
                     .padding(.trailing, 12)
             }
+            .frame(maxHeight: 40, alignment: .top)
             .padding(.top, 4)
+            .zIndex(1)
 
             // Overlays
             if appState.showSearch {
@@ -78,6 +74,15 @@ struct MainWindowContent: View {
                     }
                 }
                 .id(appState.generateId)
+            }
+
+            // Sidebar - LAST in ZStack to be on top for hit testing
+            if appState.showSidebar {
+                Sidebar()
+                    .environmentObject(appState)
+                    .frame(width: sidebarWidth)
+                    .padding(.top, 38)
+                    .transition(.move(edge: .leading))
             }
         }
         .frame(minWidth: 500, minHeight: 300)
