@@ -5,6 +5,8 @@ struct Sidebar: View {
     @ObservedObject private var themeManager = ThemeManager.shared
     @State private var hoveredPageId: UUID?
 
+    var isFloating: Bool = false
+
     private var theme: Theme {
         themeManager.currentTheme
     }
@@ -23,6 +25,12 @@ struct Sidebar: View {
                         ) {
                             if let index = appState.pages.firstIndex(where: { $0.id == page.id }) {
                                 appState.navigateToPage(at: index)
+                                // Close sidebar on selection when floating
+                                if isFloating {
+                                    withAnimation(.easeInOut(duration: 0.25)) {
+                                        appState.showSidebar = false
+                                    }
+                                }
                             }
                         } onDelete: {
                             if let index = appState.pages.firstIndex(where: { $0.id == page.id }) {
