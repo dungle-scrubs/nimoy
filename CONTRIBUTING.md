@@ -7,11 +7,13 @@ git clone https://github.com/dungle-scrubs/nimoy.git
 cd nimoy
 ```
 
-Install local pre-commit hook:
+Install local git hooks:
 
 ```bash
+brew install trufflehog
 cp .githooks/pre-commit .git/hooks/pre-commit
-chmod +x .git/hooks/pre-commit
+cp .githooks/pre-push .git/hooks/pre-push
+chmod +x .git/hooks/pre-commit .git/hooks/pre-push
 ```
 
 ## Build and Test

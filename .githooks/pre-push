@@ -1,0 +1,16 @@
+#!/bin/bash
+# Pre-push hook for Nimoy
+# Runs: TruffleHog verified-secret scan
+
+set -euo pipefail
+
+echo "🔐 Running TruffleHog secret scan before push..."
+
+if ! command -v trufflehog >/dev/null 2>&1; then
+    echo "❌ trufflehog is not installed. Install it first (brew install trufflehog)."
+    exit 1
+fi
+
+trufflehog git file://. --results=verified --fail
+
+echo "✅ TruffleHog scan passed"
