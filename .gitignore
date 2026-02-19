@@ -1,1 +1,27 @@
 .generated-images/
+
+# macOS
+.DS_Store
+
+# Local tooling
+buildServer.json
+*.log
+.env
+.env.local
+
+# Xcode / SwiftPM
+.build/
+DerivedData/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcuserdatad/
+*.xcuserstate
+
+# Coverage and profiling
+*.profraw
+*.profdata
+default.profraw
+
+# Build artifacts
+*.ipa
+*.dSYM

@@ -1,0 +1,30 @@
+name: Feature request
+description: Propose a concrete improvement.
+title: "feat: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem should this solve?
+      placeholder: Current workflow requires too many steps for ...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Be specific about behavior and UX.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: List other approaches and why they are weaker.
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Mockups, references, or constraints.

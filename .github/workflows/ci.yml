@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+
+  lint:
+    name: Swift lint
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SwiftLint
+        run: brew install swiftlint
+      - name: Run SwiftLint
+        run: swiftlint lint --config .swiftlint.yml
+
+  test:
+    name: Build and test
+    runs-on: macos-14
+    needs: [secret-scan]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve package dependencies
+        run: xcodebuild -resolvePackageDependencies -project Nimoy.xcodeproj -scheme Nimoy
+      - name: Run test suite
+        run: xcodebuild test -project Nimoy.xcodeproj -scheme Nimoy -destination 'platform=macOS'

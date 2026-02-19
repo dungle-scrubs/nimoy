@@ -1,0 +1,46 @@
+name: Bug report
+description: Report a reproducible defect.
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Provide a minimal and reproducible report.
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: One-line description of the bug.
+      placeholder: Calculation result is wrong for percentage input
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Exact sequence needed to trigger the bug.
+      placeholder: |
+        1. Open app
+        2. Enter "20% of what is 30"
+        3. Run sum
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: macOS and Xcode versions.
+      placeholder: macOS 15.2, Xcode 16.3
