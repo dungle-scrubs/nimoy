@@ -57,7 +57,14 @@ class AppState: ObservableObject {
     }
 
     func createNewPage() {
-        let page = Page.newWithRandomName()
+        createPage(Page.newWithRandomName())
+    }
+
+    func createNewPage(titled title: String, content: String = "") {
+        createPage(Page(title: title, content: content))
+    }
+
+    private func createPage(_ page: Page) {
         pages.append(page)
         currentPageIndex = pages.count - 1
         savePage(page)
@@ -71,7 +78,9 @@ class AppState: ObservableObject {
         let fileURL = storageURL.appendingPathComponent("\(page.id.uuidString).json")
         try? FileManager.default.removeItem(at: fileURL)
 
-        if currentPageIndex >= pages.count {
+        if index < currentPageIndex {
+            currentPageIndex -= 1
+        } else if currentPageIndex >= pages.count {
             currentPageIndex = max(0, pages.count - 1)
         }
 

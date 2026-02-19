@@ -1,5 +1,5 @@
-import SwiftUI
 import AppKit
+import SwiftUI
 
 struct SearchOverlay: View {
     @EnvironmentObject var appState: AppState
@@ -8,14 +8,14 @@ struct SearchOverlay: View {
     @State private var selectedIndex = 0
     @FocusState private var isSearchFocused: Bool
     @State private var eventMonitor: Any?
-    
+
     private var filteredPages: [Page] {
         appState.searchPages(query: searchText)
     }
-    
+
     var body: some View {
         let theme = themeManager.currentTheme
-        
+
         ZStack {
             // Backdrop
             Color.black.opacity(0.3)
@@ -23,7 +23,7 @@ struct SearchOverlay: View {
                 .onTapGesture {
                     close()
                 }
-            
+
             // Search panel
             VStack(spacing: 0) {
                 // Search field
@@ -31,14 +31,14 @@ struct SearchOverlay: View {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(theme.secondaryTextSwiftUI)
                         .font(.system(size: 18))
-                    
+
                     TextField("Search pages...", text: $searchText)
                         .textFieldStyle(.plain)
                         .font(.system(size: 18))
                         .foregroundColor(theme.textSwiftUI)
                         .focused($isSearchFocused)
                         .onSubmit { selectCurrentPage() }
-                    
+
                     if !searchText.isEmpty {
                         Button(action: { searchText = "" }) {
                             Image(systemName: "xmark.circle.fill")
@@ -49,10 +49,10 @@ struct SearchOverlay: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
-                
+
                 Divider()
                     .background(theme.borderSwiftUI)
-                
+
                 // Results list
                 if !filteredPages.isEmpty {
                     ScrollViewReader { proxy in
@@ -83,7 +83,7 @@ struct SearchOverlay: View {
                     VStack(spacing: 8) {
                         Text("No pages found")
                             .foregroundColor(theme.secondaryTextSwiftUI)
-                        
+
                         Button("Create \"\(searchText)\"") {
                             createNewPage(titled: searchText)
                         }
@@ -108,41 +108,39 @@ struct SearchOverlay: View {
             removeEventMonitor()
         }
     }
-    
+
     private func moveSelection(by delta: Int) {
         guard !filteredPages.isEmpty else { return }
         var newIndex = selectedIndex + delta
         if newIndex < 0 {
-            newIndex = filteredPages.count - 1  // Wrap to bottom
+            newIndex = filteredPages.count - 1 // Wrap to bottom
         } else if newIndex >= filteredPages.count {
-            newIndex = 0  // Wrap to top
+            newIndex = 0 // Wrap to top
         }
         selectedIndex = newIndex
     }
-    
+
     private func selectCurrentPage() {
-        guard selectedIndex >= 0 && selectedIndex < filteredPages.count else { return }
+        guard selectedIndex >= 0, selectedIndex < filteredPages.count else { return }
         navigateToPage(filteredPages[selectedIndex])
     }
-    
+
     private func navigateToPage(_ page: Page) {
         if let index = appState.pages.firstIndex(where: { $0.id == page.id }) {
             appState.navigateToPage(at: index)
         }
         close()
     }
-    
+
     private func createNewPage(titled title: String) {
-        let page = Page(title: title, content: "")
-        appState.pages.append(page)
-        appState.currentPageIndex = appState.pages.count - 1
+        appState.createNewPage(titled: title)
         close()
     }
-    
+
     private func close() {
         appState.showSearch = false
     }
-    
+
     private func setupEventMonitor() {
         eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             switch event.keyCode {
@@ -160,7 +158,7 @@ struct SearchOverlay: View {
             }
         }
     }
-    
+
     private func removeEventMonitor() {
         if let monitor = eventMonitor {
             NSEvent.removeMonitor(monitor)
@@ -174,19 +172,19 @@ struct SearchResultRow: View {
     let searchQuery: String
     let isSelected: Bool
     let theme: Theme
-    
+
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "doc.text")
                 .foregroundColor(theme.secondaryTextSwiftUI)
                 .font(.system(size: 16))
-            
+
             VStack(alignment: .leading, spacing: 2) {
                 Text(page.title.isEmpty ? "Untitled" : page.title)
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(theme.textSwiftUI)
                     .lineLimit(1)
-                
+
                 if let preview = contentPreview {
                     Text(preview)
                         .font(.system(size: 12))
@@ -194,9 +192,9 @@ struct SearchResultRow: View {
                         .lineLimit(1)
                 }
             }
-            
+
             Spacer()
-            
+
             Text(formatDate(page.modifiedAt))
                 .font(.caption)
                 .foregroundColor(theme.secondaryTextSwiftUI.opacity(0.7))
@@ -206,18 +204,18 @@ struct SearchResultRow: View {
         .background(isSelected ? theme.selectionSwiftUI : Color.clear)
         .contentShape(Rectangle())
     }
-    
+
     private var contentPreview: String? {
         guard !searchQuery.isEmpty else { return nil }
-        
+
         let lines = page.content.components(separatedBy: .newlines)
         if let matchingLine = lines.first(where: { $0.localizedCaseInsensitiveContains(searchQuery) }) {
             return matchingLine.trimmingCharacters(in: .whitespaces)
         }
-        
+
         return lines.first { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
     }
-    
+
     private func formatDate(_ date: Date) -> String {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
