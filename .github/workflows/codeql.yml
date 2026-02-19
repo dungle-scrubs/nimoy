@@ -1,0 +1,35 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 4 * * 1"
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: Analyze (Swift)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: swift
+
+      - name: Resolve package dependencies
+        run: xcodebuild -resolvePackageDependencies -project Nimoy.xcodeproj -scheme Nimoy
+
+      - name: Build
+        run: xcodebuild -project Nimoy.xcodeproj -scheme Nimoy -destination 'platform=macOS' build
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
