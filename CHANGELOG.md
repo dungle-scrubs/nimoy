@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2](https://github.com/dungle-scrubs/nimoy/compare/v0.1.1...v0.1.2) (2026-02-24)
+
+
+### Added
+
+* add Homebrew cask release workflow and install docs ([#4](https://github.com/dungle-scrubs/nimoy/issues/4)) ([4bd14b1](https://github.com/dungle-scrubs/nimoy/commit/4bd14b1a8a96169598665a114348bb8a37d24c64))
+
+
+### Maintenance
+
+* **deps:** bump actions/checkout from 4 to 6 ([#3](https://github.com/dungle-scrubs/nimoy/issues/3)) ([4a4e30b](https://github.com/dungle-scrubs/nimoy/commit/4a4e30b48fde4eafd953d8ad3c2945f116e71bc6))
+* **deps:** bump github/codeql-action from 3 to 4 ([#2](https://github.com/dungle-scrubs/nimoy/issues/2)) ([64d048b](https://github.com/dungle-scrubs/nimoy/commit/64d048b97843e4818c6ea49f70aa7d754e3cf865))
+
 ## [0.1.1](https://github.com/dungle-scrubs/nimoy/compare/v0.1.0...v0.1.1) (2026-02-19)
 
 
