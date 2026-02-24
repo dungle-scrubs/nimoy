@@ -24,7 +24,7 @@ jobs:
   build:
     needs: release-please
     if: needs.release-please.outputs.release_created == 'true'
-    runs-on: macos-14
+    runs-on: macos-15
     strategy:
       matrix:
         arch: [arm64, x86_64]

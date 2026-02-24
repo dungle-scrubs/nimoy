@@ -21,7 +21,7 @@ jobs:
 
   lint:
     name: Swift lint
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v6
       - name: Install SwiftLint
@@ -31,7 +31,7 @@ jobs:
 
   test:
     name: Build and test
-    runs-on: macos-14
+    runs-on: macos-15
     needs: [secret-scan]
     steps:
       - uses: actions/checkout@v6
