@@ -13,12 +13,18 @@ results while you type.
 - Multi-page workspace with quick search and actions palette
 - Optional AI generation and autocomplete
 
+## Install
+
+```bash
+brew install dungle-scrubs/nimoy/nimoy
+```
+
 ## Requirements
 
 - macOS 14+
-- Xcode 16+
+- Xcode 16+ (for building from source)
 
-## Build and Run
+## Build from Source
 
 ```bash
 git clone https://github.com/dungle-scrubs/nimoy.git
