@@ -1,4 +1,5 @@
 .generated-images/
+assets/.drafts/
 
 # macOS
 .DS_Store
