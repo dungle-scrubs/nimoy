@@ -54,7 +54,7 @@ jobs:
           cd dist
           zip -r -y ../Nimoy-${{ needs.release-please.outputs.tag_name }}-darwin-${{ matrix.arch }}.zip Nimoy.app
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: Nimoy-darwin-${{ matrix.arch }}
           path: Nimoy-${{ needs.release-please.outputs.tag_name }}-darwin-${{ matrix.arch }}.zip
