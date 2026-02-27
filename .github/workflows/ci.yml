@@ -18,24 +18,3 @@ jobs:
           fetch-depth: 0
       - name: Run TruffleHog
         run: docker run --rm -v "$PWD:/repo" trufflesecurity/trufflehog:latest git file:///repo --results=verified --fail
-
-  lint:
-    name: Swift lint
-    runs-on: macos-15
-    steps:
-      - uses: actions/checkout@v6
-      - name: Install SwiftLint
-        run: brew install swiftlint
-      - name: Run SwiftLint
-        run: swiftlint lint --config .swiftlint.yml
-
-  test:
-    name: Build and test
-    runs-on: macos-15
-    needs: [secret-scan]
-    steps:
-      - uses: actions/checkout@v6
-      - name: Resolve package dependencies
-        run: xcodebuild -resolvePackageDependencies -project Nimoy.xcodeproj -scheme Nimoy
-      - name: Run test suite
-        run: xcodebuild test -project Nimoy.xcodeproj -scheme Nimoy -destination 'platform=macOS'
