@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4](https://github.com/dungle-scrubs/nimoy/compare/v0.1.3...v0.1.4) (2026-02-27)
+
+
+### Maintenance
+
+* **ci:** remove macOS-only jobs and heavy release build ([#10](https://github.com/dungle-scrubs/nimoy/issues/10)) ([e8096de](https://github.com/dungle-scrubs/nimoy/commit/e8096de45ce6f1d2a18841c9e5f55d5237f5e432))
+
 ## [0.1.3](https://github.com/dungle-scrubs/nimoy/compare/v0.1.2...v0.1.3) (2026-02-24)
 
 
